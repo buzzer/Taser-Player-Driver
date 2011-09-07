@@ -1,0 +1,4 @@
+build/
+*.dylib
+*.la
+*.a
