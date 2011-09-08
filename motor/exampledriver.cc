@@ -30,6 +30,8 @@
 /*
 #include <config.h>
 */
+// TODO power interface
+// TODO read wheel speed
 
 #if !defined (WIN32)
   #include <unistd.h>
@@ -39,52 +41,9 @@
 #include <libplayercore/playercore.h>
 
 #include "taser.h"
-
-////////////////////////////////////////////////////////////////////////////////
-// The class for the driver
-class TaserDriver : public ThreadedDriver
-{
-  private:
-    player_taser_data_t taser_data;
-
-    player_devaddr_t position_id;
-    int position_subscriptions;
-
-    // Max motor speeds (mm/sec,deg/sec)
-    int motor_max_speed;
-    int motor_max_turnspeed;
-
-
-  public:
-    
-    // Constructor; need that
-    TaserDriver(ConfigFile* cf, int section);
-    ~TaserDriver(void);
-
-    virtual int Subscribe(player_devaddr_t id);
-    virtual int Unsubscribe(player_devaddr_t id);
-
-    // This method will be invoked on each incoming message
-    virtual int ProcessMessage(QueuePointer &resp_queue, 
-                               player_msghdr * hdr,
-                               void * data);
-
-    int HandleConfig(QueuePointer & resp_queue,
-                     player_msghdr * hdr,
-                     void* data);
-    int HandleCommand(player_msghdr * hdr, void * data);
-    void ToggleMotorPower(unsigned char val);
-    void HandlePositionCommand(player_position2d_cmd_vel_t position_cmd);
-
-  private:
-
-    // Main function for device thread.
-    virtual void Main();
-    virtual int MainSetup();
-    virtual void MainQuit();
-
-    int foop;
-};
+#include <math.h>
+#include "/Users/sebastian/tams/taser/ben/src/packet.h"
+//#include "/Users/sebastian/tams/taser/ben/src/udpclient/udpclient.h"
 
 // A factory creation function, declared outside of the class so that it
 // can be invoked without any object context (alternatively, you can
@@ -261,6 +220,7 @@ TaserDriver::HandleConfig(QueuePointer & resp_queue,
     player_position2d_set_odom_req_t* set_odom_req =
             (player_position2d_set_odom_req_t*)data;
 
+    // TODO set odometry
     //this->sippacket->x_offset = ((int)rint(set_odom_req->pose.px*1e3)) -
             //this->sippacket->xpos;
     //this->sippacket->y_offset = ((int)rint(set_odom_req->pose.py*1e3)) -
@@ -387,46 +347,47 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
   unsigned char motorcommand[4];
   //P2OSPacket motorpacket;
 
-  //speedDemand = (int)rint(position_cmd.vel.px * 1e3);
-  //turnRateDemand = (int)rint(RTOD(position_cmd.vel.pa));
+  speedDemand = (int)rint(position_cmd.vel.px * 1e3);
+  turnRateDemand = (int)rint(RTOD(position_cmd.vel.pa));
 
   //if(this->direct_wheel_vel_control)
   //{
-    //// convert xspeed and yawspeed into wheelspeeds
-    //rotational_term = (M_PI/180.0) * turnRateDemand /
+    // convert xspeed and yawspeed into wheelspeeds
+    rotational_term = (M_PI/180.0) * turnRateDemand /
+      0.0056;
             //PlayerRobotParams[param_idx].DiffConvFactor;
-    //leftvel = (speedDemand - rotational_term);
-    //rightvel = (speedDemand + rotational_term);
+    leftvel = (speedDemand - rotational_term);
+    rightvel = (speedDemand + rotational_term);
 
-    //// Apply wheel speed bounds
-    //if(fabs(leftvel) > this->motor_max_speed)
-    //{
-      //if(leftvel > 0)
-      //{
-        //rightvel *= this->motor_max_speed/leftvel;
-        //leftvel = this->motor_max_speed;
-        //puts("Left wheel velocity threshholded!");
-      //}
-      //else
-      //{
-        //rightvel *= -this->motor_max_speed/leftvel;
-        //leftvel = -this->motor_max_speed;
-      //}
-    //}
-    //if(fabs(rightvel) > this->motor_max_speed)
-    //{
-      //if(rightvel > 0)
-      //{
-        //leftvel *= this->motor_max_speed/rightvel;
-        //rightvel = this->motor_max_speed;
-        //puts("Right wheel velocity threshholded!");
-      //}
-      //else
-      //{
-        //leftvel *= -this->motor_max_speed/rightvel;
-        //rightvel = -this->motor_max_speed;
-      //}
-    //}
+    // Apply wheel speed bounds
+    if(fabs(leftvel) > this->motor_max_speed)
+    {
+      if(leftvel > 0)
+      {
+        rightvel *= this->motor_max_speed/leftvel;
+        leftvel = this->motor_max_speed;
+        puts("Left wheel velocity threshholded!");
+      }
+      else
+      {
+        rightvel *= -this->motor_max_speed/leftvel;
+        leftvel = -this->motor_max_speed;
+      }
+    }
+    if(fabs(rightvel) > this->motor_max_speed)
+    {
+      if(rightvel > 0)
+      {
+        leftvel *= this->motor_max_speed/rightvel;
+        rightvel = this->motor_max_speed;
+        puts("Right wheel velocity threshholded!");
+      }
+      else
+      {
+        leftvel *= -this->motor_max_speed/rightvel;
+        rightvel = -this->motor_max_speed;
+      }
+    }
 
     //// Apply control band bounds
     //if(this->use_vel_band)
@@ -452,26 +413,47 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
       //}
     //}
 
-    //// Apply byte range bounds
+    // Apply byte range bounds
     //if (leftvel / PlayerRobotParams[param_idx].Vel2Divisor > 126)
+    if (leftvel / 20 > 126)
       //leftvel = 126 * PlayerRobotParams[param_idx].Vel2Divisor;
+      leftvel = 126 * 20;
     //if (leftvel / PlayerRobotParams[param_idx].Vel2Divisor < -126)
       //leftvel = -126 * PlayerRobotParams[param_idx].Vel2Divisor;
     //if (rightvel / PlayerRobotParams[param_idx].Vel2Divisor > 126)
       //rightvel = 126 * PlayerRobotParams[param_idx].Vel2Divisor;
     //if (rightvel / PlayerRobotParams[param_idx].Vel2Divisor < -126)
       //rightvel = -126 * PlayerRobotParams[param_idx].Vel2Divisor;
+    if (leftvel / 20 < -126)
+      leftvel = -126 * 20;
+    if (rightvel / 20 > 126)
+      rightvel = 126 * 20;
+    if (rightvel / 20 < -126)
+      rightvel = -126 * 20;
 
-    //// send the speed command
+    // send the speed command
     //motorcommand[0] = VEL2;
     //motorcommand[1] = ARGINT;
     //motorcommand[2] = (char)(rightvel /
                              //PlayerRobotParams[param_idx].Vel2Divisor);
     //motorcommand[3] = (char)(leftvel /
                              //PlayerRobotParams[param_idx].Vel2Divisor);
+    motorcommand[2] = (char)(rightvel /
+                             20);
+    motorcommand[3] = (char)(leftvel /
+                             20);
 
     //motorpacket.Build(motorcommand, 4);
     //this->SendReceive(&motorpacket);
+    puts("Set right velocity to ");
+    //cout << rightvel << endl;
+    puts("Set left velocity to ");
+    //cout << leftvel << endl;
+		// SET MOTOR SPEEDS
+		Packet requestSpeed(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
+		requestSpeed.pushS32(motorcommand[2]);
+		requestSpeed.pushS32(motorcommand[2]);
+		send(&requestSpeed);
   //}
   //else
   //{
@@ -517,8 +499,9 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
       //motorcommand[3] = (this->motor_max_turnspeed & 0xFF00) >> 8;
     //}
 
-    //motorpacket.Build(motorcommand, 4);
-    //this->SendReceive(&motorpacket);
+    ////motorpacket.Build(motorcommand, 4);
+    ////this->SendReceive(&motorpacket);
+    //puts("separate trans and rot vels mode");
 
   //}
 }
@@ -547,15 +530,21 @@ TaserDriver::HandleCommand(player_msghdr * hdr, void* data)
 void
 TaserDriver::ToggleMotorPower(unsigned char val)
 {
-  unsigned char command[4];
-  //P2OSPacket packet;
+  if (val == 0)
+  {
 
-  //command[0] = ENABLE;
-  //command[1] = ARGINT;
-  //command[2] = val;
-  //command[3] = 0;
-  //packet.Build(command, 4);
-  //SendReceive(&packet,false);
+    // TOGGLE BRAKES ON/OFF
+    //logger->UdpClient("UdpClient::run(): enabling brakes.");
+    Packet brakeOn(CAN_REQUEST | CAN_BRAKES_ENABLE);
+    send(&brakeOn);
+
+  } else {
+
+    //logger->UdpClient("UdpClient::run(): disabling brakes.");
+    Packet brakeOff(CAN_REQUEST | CAN_BRAKES_DISABLE);
+    send(&brakeOff);
+
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -593,6 +582,34 @@ void TaserDriver::Main()
 
     // Interact with the device, and push out the resulting data, using
     // Driver::Publish()
+
+		// speed should be between -46656 and 46656 (-36 to 36 ^ 3)
+		// maximum Speed in m/s.
+		float maximumTranslationSpeed = 1.0;
+
+		float speedLeft, speedRight;
+
+		speedLeft = maximumTranslationSpeed / (double)46656 * (double)speed;
+		speedRight= maximumTranslationSpeed / (double)46656 * (double)speed;
+
+		puts("before steering: speedLeft %2.2f, speedRight %2.2f", speedLeft, speedRight);
+
+		float maximumRotationSpeed = maximumTranslationSpeed / 2.5;
+
+		// steering should be between -36 and 36 (-36 to 36 ^ 3)
+		float steeringFactor = (maximumRotationSpeed / (double)36.0 * (double)steering);
+		puts("steeringFactor is %2.2f", steeringFactor);
+		// steeringfactor is -1 to +1
+
+		speedLeft = speedLeft + steeringFactor;
+		speedRight = speedRight - steeringFactor;
+
+		puts("setting speed to %2.2f left, %2.2f right", speedLeft, speedRight);
+
+		Packet requestSpeed(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
+		requestSpeed.pushF32(speedLeft);
+		requestSpeed.pushF32(speedRight);
+		send(&requestSpeed);
 
     // Sleep (you might, for example, block on a read() instead)
     usleep(100000);

@@ -5,4 +5,4 @@ PROJECT (playerplugin_examples)
 SET (CMAKE_MODULE_PATH "/usr/local/share/cmake/Modules")
 INCLUDE (UsePlayerPlugin)
 
-PLAYER_ADD_PLUGIN_DRIVER (exampledriver SOURCES exampledriver.cc)
+PLAYER_ADD_PLUGIN_DRIVER (exampledriver SOURCES exampledriver.cc INCLUDEDIRS /Users/sebastian/tams/taser/ben/src)
