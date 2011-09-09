@@ -40,7 +40,7 @@
 
 #include <libplayercore/playercore.h>
 
-#include "taser.h"
+#include "taserdriver.h"
 #include <math.h>
 
 // A factory creation function, declared outside of the class so that it
@@ -60,7 +60,7 @@ TaserDriver_Init(ConfigFile* cf, int section)
 // driver can support and how to create a driver instance.
 void TaserDriver_Register(DriverTable* table)
 {
-  table->AddDriver("exampledriver", TaserDriver_Init);
+  table->AddDriver("taserdriver", TaserDriver_Init);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
