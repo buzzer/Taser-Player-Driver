@@ -42,8 +42,6 @@
 
 #include "taser.h"
 #include <math.h>
-#include "/Users/sebastian/tams/taser/ben/src/packet.h"
-//#include "/Users/sebastian/tams/taser/ben/src/udpclient/udpclient.h"
 
 // A factory creation function, declared outside of the class so that it
 // can be invoked without any object context (alternatively, you can
@@ -75,6 +73,13 @@ TaserDriver::TaserDriver(ConfigFile* cf, int section)
   // Read an option from the configuration file
   this->foop = cf->ReadInt(section, "foo", 0);
 
+  this->motor_max_speed = (int)rint(1e3 * cf->ReadLength(section,
+        "max_xspeed",
+        MOTOR_DEF_MAX_SPEED));
+  this->motor_max_turnspeed = (int)rint(RTOD(cf->ReadAngle(section,
+        "max_yawspeed",
+        MOTOR_DEF_MAX_TURNSPEED)));
+
   return;
 }
 
@@ -87,10 +92,17 @@ int TaserDriver::MainSetup()
   // Here you do whatever is necessary to setup the device, like open and
   // configure a serial port.
 
-  printf("Was foo option given in config file? %d\n", this->foop);
+  //printf("Was foo option given in config file? %d\n", this->foop);
 
-  puts("Setting up udpclient");
-  // TODO call updclient here
+	// startup motors first, even if the incoming commands don't require them. Otherwise, as soon
+	// as we DO have a command that requires the motors, the server hangs during startMotors();
+	drive.startMotors();
+
+	// Instead of applying brakes (releasing them takes forever), we set Emergency Stop, which also
+	// applies the brakes, but can be undone much faster.
+	drive.setEmergencyStop(true);
+
+	puts("CanServer::CanServer(): brakes applied, ready and waiting.");
 
   puts("Taser driver ready");
 
@@ -106,6 +118,7 @@ void TaserDriver::MainQuit()
 
   // Here you would shut the device down by, for example, closing a
   // serial port.
+	drive.setEmergencyStop(true);
 
   puts("Taser driver has been shutdown");
 }
@@ -150,33 +163,7 @@ TaserDriver::Unsubscribe(player_devaddr_t id)
   return(shutdownResult);
 }
 
-//void
-//TaserDriver::StandardSIPPutData(double timestampStandardSIP)
-//{
-  //// put odometry data
-  //this->Publish(this->position_id,
-                //PLAYER_MSGTYPE_DATA,
-                //PLAYER_POSITION2D_DATA_STATE,
-                //(void*)&(this->taser_data.position),
-                //sizeof(player_position2d_data_t),
-                //&timestampStandardSIP);
-
-  //// put power data
-  ////this->Publish(this->power_id,
-                ////PLAYER_MSGTYPE_DATA,
-                ////PLAYER_POWER_DATA_STATE,
-                ////(void*)&(this->taser_data.power),
-                ////sizeof(player_power_data_t),
-                ////&timestampStandardSIP);
-
-  //// put PTZ data
-  ////this->Publish(this->ptz_id,
-                ////PLAYER_MSGTYPE_DATA,
-                ////PLAYER_PTZ_DATA_STATE,
-                ////(void*)&(this->ptz_data));
-//}
-
-int TaserDriver::ProcessMessage(QueuePointer & resp_queue, 
+int TaserDriver::ProcessMessage(QueuePointer & resp_queue,
                                   player_msghdr * hdr,
                                   void * data)
 {
@@ -195,8 +182,6 @@ int TaserDriver::ProcessMessage(QueuePointer & resp_queue,
     return(this->HandleCommand(hdr,data));
   else
     return(-1);
-
-  //return(0);
 }
 
 int
@@ -285,8 +270,8 @@ TaserDriver::HandleConfig(QueuePointer & resp_queue,
     //       given in the Saphira parameters.  For now, -0.1 is
     //       about right for a Pioneer 2DX.
     // TODO fix to suite Taser
-    geom.pose.px = -0.1;
-    geom.pose.py = 0.0;
+    geom.pose.px   = 0.0;
+    geom.pose.py   = 0.0;
     geom.pose.pyaw = 0.0;
     // get dimensions from the parameter table
     // TODO
@@ -317,12 +302,9 @@ TaserDriver::HandleConfig(QueuePointer & resp_queue,
             (player_position2d_velocity_mode_config_t*)data;
 
     if(velmode_config->value)
-      //direct_wheel_vel_control = false;
-      //TODO
-      ;
+      direct_wheel_vel_control = false;
     else
-      //direct_wheel_vel_control = true;
-      ;
+      direct_wheel_vel_control = true;
 
     this->Publish(this->position_id, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_VELOCITY_MODE);
@@ -345,17 +327,15 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
   double rotational_term;
   unsigned short absspeedDemand, absturnRateDemand;
   unsigned char motorcommand[4];
-  //P2OSPacket motorpacket;
 
   speedDemand = (int)rint(position_cmd.vel.px * 1e3);
   turnRateDemand = (int)rint(RTOD(position_cmd.vel.pa));
 
-  //if(this->direct_wheel_vel_control)
-  //{
+  if(this->direct_wheel_vel_control)
+  {
     // convert xspeed and yawspeed into wheelspeeds
     rotational_term = (M_PI/180.0) * turnRateDemand /
-      0.0056;
-            //PlayerRobotParams[param_idx].DiffConvFactor;
+      0.0056; //PlayerRobotParams[param_idx].DiffConvFactor;
     leftvel = (speedDemand - rotational_term);
     rightvel = (speedDemand + rotational_term);
 
@@ -389,47 +369,15 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
       }
     }
 
-    //// Apply control band bounds
-    //if(this->use_vel_band)
-    //{
-      //// This band prevents the wheels from turning in opposite
-      //// directions
-      //if (leftvel * rightvel < 0)
-      //{
-        //if (leftvel + rightvel >= 0)
-        //{
-          //if (leftvel < 0)
-            //leftvel = 0;
-          //if (rightvel < 0)
-            //rightvel = 0;
-        //}
-        //else
-        //{
-          //if (leftvel > 0)
-            //leftvel = 0;
-          //if (rightvel > 0)
-            //rightvel = 0;
-        //}
-      //}
-    //}
-
     // Apply byte range bounds
-    //if (leftvel / PlayerRobotParams[param_idx].Vel2Divisor > 126)
-    if (leftvel / 20 > 126)
-      //leftvel = 126 * PlayerRobotParams[param_idx].Vel2Divisor;
-      leftvel = 126 * 20;
-    //if (leftvel / PlayerRobotParams[param_idx].Vel2Divisor < -126)
-      //leftvel = -126 * PlayerRobotParams[param_idx].Vel2Divisor;
-    //if (rightvel / PlayerRobotParams[param_idx].Vel2Divisor > 126)
-      //rightvel = 126 * PlayerRobotParams[param_idx].Vel2Divisor;
-    //if (rightvel / PlayerRobotParams[param_idx].Vel2Divisor < -126)
-      //rightvel = -126 * PlayerRobotParams[param_idx].Vel2Divisor;
-    if (leftvel / 20 < -126)
-      leftvel = -126 * 20;
-    if (rightvel / 20 > 126)
-      rightvel = 126 * 20;
-    if (rightvel / 20 < -126)
-      rightvel = -126 * 20;
+    //if (leftvel / 20 > 126)
+      //leftvel = 126 * 20;
+    //if (leftvel / 20 < -126)
+      //leftvel = -126 * 20;
+    //if (rightvel / 20 > 126)
+      //rightvel = 126 * 20;
+    //if (rightvel / 20 < -126)
+      //rightvel = -126 * 20;
 
     // send the speed command
     //motorcommand[0] = VEL2;
@@ -438,72 +386,39 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
                              //PlayerRobotParams[param_idx].Vel2Divisor);
     //motorcommand[3] = (char)(leftvel /
                              //PlayerRobotParams[param_idx].Vel2Divisor);
-    motorcommand[2] = (char)(rightvel /
-                             20);
-    motorcommand[3] = (char)(leftvel /
-                             20);
+    //motorcommand[2] = (char)(rightvel /
+                             //20);
+    //motorcommand[3] = (char)(leftvel /
+                             //20);
 
     //motorpacket.Build(motorcommand, 4);
     //this->SendReceive(&motorpacket);
     puts("Set right velocity to ");
-    //cout << rightvel << endl;
+    cout << rightvel << endl;
     puts("Set left velocity to ");
-    //cout << leftvel << endl;
+    cout << leftvel << endl;
 		// SET MOTOR SPEEDS
-		Packet requestSpeed(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
-		requestSpeed.pushS32(motorcommand[2]);
-		requestSpeed.pushS32(motorcommand[2]);
-		send(&requestSpeed);
-  //}
-  //else
-  //{
-    //// do separate trans and rot vels
+    // We shouldn't get packets requesting a wheelspeed higher than this...
+    //int maximumWheelSpeeds = config->getMaximumWheelSpeed() * 1000000 * 1.1;
 
-    //motorcommand[0] = VEL;
-    //if(speedDemand >= 0)
-      //motorcommand[1] = ARGINT;
-    //else
-      //motorcommand[1] = ARGNINT;
+    assert(abs(speedL) < maximumWheelSpeeds);
+    assert(abs(speedR) < maximumWheelSpeeds);
 
-    //absspeedDemand = (unsigned short)abs(speedDemand);
-    //if(absspeedDemand < this->motor_max_speed)
-    //{
-      //motorcommand[2] = absspeedDemand & 0x00FF;
-      //motorcommand[3] = (absspeedDemand & 0xFF00) >> 8;
-    //}
-    //else
-    //{
-      //puts("Speed demand threshholded!");
-      //motorcommand[2] = this->motor_max_speed & 0x00FF;
-      //motorcommand[3] = (this->motor_max_speed & 0xFF00) >> 8;
-    //}
-    //motorpacket.Build(motorcommand, 4);
-    //this->SendReceive(&motorpacket);
+    static bool driveInitialized = false;
 
-    //motorcommand[0] = RVEL;
-    //if(turnRateDemand >= 0)
-      //motorcommand[1] = ARGINT;
-    //else
-      //motorcommand[1] = ARGNINT;
+    if(!driveInitialized)
+    {
+      // we start the motors in run() already.
+      //drive.startMotors();
+      usleep(20000);
+      drive.setEmergencyStop(false);
+      usleep(20000);
+      driveInitialized = true;
+    }
 
-    //absturnRateDemand = (unsigned short)abs(turnRateDemand);
-    //if(absturnRateDemand < this->motor_max_turnspeed)
-    //{
-      //motorcommand[2] = absturnRateDemand & 0x00FF;
-      //motorcommand[3] = (absturnRateDemand & 0xFF00) >> 8;
-    //}
-    //else
-    //{
-      //puts("Turn rate demand threshholded!");
-      //motorcommand[2] = this->motor_max_turnspeed & 0x00FF;
-      //motorcommand[3] = (this->motor_max_turnspeed & 0xFF00) >> 8;
-    //}
-
-    ////motorpacket.Build(motorcommand, 4);
-    ////this->SendReceive(&motorpacket);
-    //puts("separate trans and rot vels mode");
-
-  //}
+    drive.setMotorSpeeds(speedL, speedR);
+  }
+  // TODO non direct control
 }
 
 int
@@ -534,15 +449,13 @@ TaserDriver::ToggleMotorPower(unsigned char val)
   {
 
     // TOGGLE BRAKES ON/OFF
-    //logger->UdpClient("UdpClient::run(): enabling brakes.");
-    Packet brakeOn(CAN_REQUEST | CAN_BRAKES_ENABLE);
-    send(&brakeOn);
+    puts("enabling brakes.");
+    drive.setEmergencyStop(true);
 
   } else {
 
-    //logger->UdpClient("UdpClient::run(): disabling brakes.");
-    Packet brakeOff(CAN_REQUEST | CAN_BRAKES_DISABLE);
-    send(&brakeOff);
+    puts("disabling brakes.");
+    drive.setEmergencyStop(false);
 
   }
 }
