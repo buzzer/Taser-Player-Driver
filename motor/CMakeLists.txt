@@ -3,12 +3,12 @@ PROJECT (playerplugin_taser)
 
 # Include this CMake module to get most of the settings needed to build
 SET (CMAKE_MODULE_PATH "/informatik/isr/tams/software/player64/share/cmake/Modules")
-#SET (CMAKE_INCLUDE_PATH "/informatik/home/rockel/tams/taser/ben/src/devices")
+#SET (CMAKE_INCLUDE_PATH "../../../tams/taser/ben/src/devices")
 #ADD_SUBDIRECTORY("${CMAKE_INCLUDE_PATH}" "${CMAKE_CURRENT_BINARY_DIR}/bensrc")
-#ADD_SUBDIRECTORY("/informatik/home/rockel/tams/taser/ben/src/devices" "${CMAKE_INCLUDE_PATH}/bensrc")
-#ADD_SUBDIRECTORY( /informatik/home/rockel/tams/taser/ben/src/canserver /informatik/home/rockel/tams/taser/ben/src/canserver/build)
-#ADD_SUBDIRECTORY( /informatik/home/rockel/tams/taser/ben/src/devices /informatik/home/rockel/tams/taser/ben/src/devices/build)
-#ADD_SUBDIRECTORY( /informatik/home/rockel/tams/taser/ben/src /informatik/home/rockel/tams/taser/ben/src)
+#ADD_SUBDIRECTORY("../../../tams/taser/ben/src/devices" "${CMAKE_INCLUDE_PATH}/bensrc")
+#ADD_SUBDIRECTORY( ../../../tams/taser/ben/src/canserver ../../../tams/taser/ben/src/canserver/build)
+#ADD_SUBDIRECTORY( ../../../tams/taser/ben/src/devices ../../../tams/taser/ben/src/devices/build)
+#ADD_SUBDIRECTORY( ../../../tams/taser/ben/src ../../../tams/taser/ben/src)
 # TODO remove QT dependency
 find_package ( Qt4 REQUIRED )
 include ( ${QT_USE_FILE} )
@@ -29,9 +29,9 @@ PLAYER_ADD_PLUGIN_DRIVER (
   #SOURCES taserdriver drive
   SOURCES taserdriver
   INCLUDEDIRS
-  /informatik/home/rockel/tams/taser/ben/src
-  /informatik/home/rockel/tams/taser/ben/src/devices
-  /informatik/home/rockel/tams/taser/ben/src/canserver
-  /informatik/home/rockel/tams/taser/ben/src/canbus
-  #CFLAGS -I/informatik/home/rockel/tams/taser/ben/src/devices -I/informatik/home/rockel/tams/taser/ben/src
+  ../../../tams/taser/ben/src
+  ../../../tams/taser/ben/src/devices
+  ../../../tams/taser/ben/src/canserver
+  ../../../tams/taser/ben/src/canbus
+  #CFLAGS -I../../../tams/taser/ben/src/devices -I../../../tams/taser/ben/src
   )
