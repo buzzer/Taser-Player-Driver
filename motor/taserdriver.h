@@ -33,9 +33,9 @@ class TaserDriver : public ThreadedDriver
     int motor_max_turnspeed;
     int direct_wheel_vel_control; // false -> separate trans and rot vel
 
-		Battery battery;		///< a battery attached to CAN
+		//Battery battery;		///< a battery attached to CAN
 		//RemoteControl remoteControl;	///< a remoteControl attached to CAN
-		Drive drive;			///< the motors attached to CAN
+    Drive drive;			///< the motors attached to CAN
 
   public:
     // Constructor; need that

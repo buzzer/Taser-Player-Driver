@@ -1,9 +1,9 @@
 /*
  *  Player - One Hell of a Robot Server
- *  Copyright (C) 2003  
+ *  Copyright (C) 2003
  *     Brian Gerkey
- *                      
- * 
+ *
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -36,18 +36,19 @@
 #if !defined (WIN32)
   #include <unistd.h>
 #endif
-#include <string.h>
+#include <string>
 
 #include <libplayercore/playercore.h>
 
 #include "taserdriver.h"
-#include <math.h>
+#include <cmath>
+#include <iostream>
 
 // A factory creation function, declared outside of the class so that it
 // can be invoked without any object context (alternatively, you can
 // declare it static in the class).  In this function, we create and return
 // (as a generic Driver*) a pointer to a new instance of this driver.
-Driver* 
+Driver*
 TaserDriver_Init(ConfigFile* cf, int section)
 {
   // Create and return a new instance of this driver
@@ -394,12 +395,16 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
     //motorpacket.Build(motorcommand, 4);
     //this->SendReceive(&motorpacket);
     puts("Set right velocity to ");
-    cout << rightvel << endl;
+    std::cout << rightvel << std::endl;
     puts("Set left velocity to ");
-    cout << leftvel << endl;
+    std::cout << leftvel << std::endl;
 		// SET MOTOR SPEEDS
     // We shouldn't get packets requesting a wheelspeed higher than this...
     //int maximumWheelSpeeds = config->getMaximumWheelSpeed() * 1000000 * 1.1;
+    // Convert from Player speed (m/s) to Taser speed (um/s)
+    int speedL = (int)(leftvel * 1e6);
+    int speedR = (int)(rightvel * 1e6);
+    int maximumWheelSpeeds = this->motor_max_speed;
 
     assert(abs(speedL) < maximumWheelSpeeds);
     assert(abs(speedR) < maximumWheelSpeeds);
@@ -498,31 +503,34 @@ void TaserDriver::Main()
 
 		// speed should be between -46656 and 46656 (-36 to 36 ^ 3)
 		// maximum Speed in m/s.
+    // TODO read Odometer
+    // TODO read speed
+    // TODO read laser
 		float maximumTranslationSpeed = 1.0;
 
 		float speedLeft, speedRight;
 
-		speedLeft = maximumTranslationSpeed / (double)46656 * (double)speed;
-		speedRight= maximumTranslationSpeed / (double)46656 * (double)speed;
+		//speedLeft = maximumTranslationSpeed / (double)46656 * (double)speed;
+		//speedRight= maximumTranslationSpeed / (double)46656 * (double)speed;
 
-		puts("before steering: speedLeft %2.2f, speedRight %2.2f", speedLeft, speedRight);
+		//puts("before steering: speedLeft %2.2f, speedRight %2.2f", speedLeft, speedRight);
 
 		float maximumRotationSpeed = maximumTranslationSpeed / 2.5;
 
 		// steering should be between -36 and 36 (-36 to 36 ^ 3)
-		float steeringFactor = (maximumRotationSpeed / (double)36.0 * (double)steering);
-		puts("steeringFactor is %2.2f", steeringFactor);
+		//float steeringFactor = (maximumRotationSpeed / (double)36.0 * (double)steering);
+		//puts("steeringFactor is %2.2f", steeringFactor);
 		// steeringfactor is -1 to +1
 
-		speedLeft = speedLeft + steeringFactor;
-		speedRight = speedRight - steeringFactor;
+		//speedLeft = speedLeft + steeringFactor;
+		//speedRight = speedRight - steeringFactor;
 
-		puts("setting speed to %2.2f left, %2.2f right", speedLeft, speedRight);
+		//puts("setting speed to %2.2f left, %2.2f right", speedLeft, speedRight);
 
-		Packet requestSpeed(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
-		requestSpeed.pushF32(speedLeft);
-		requestSpeed.pushF32(speedRight);
-		send(&requestSpeed);
+		//Packet requestSpeed(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
+		//requestSpeed.pushF32(speedLeft);
+		//requestSpeed.pushF32(speedRight);
+		//send(&requestSpeed);
 
     // Sleep (you might, for example, block on a read() instead)
     usleep(100000);

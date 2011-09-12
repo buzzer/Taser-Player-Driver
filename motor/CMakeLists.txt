@@ -3,12 +3,10 @@ PROJECT (playerplugin_taser)
 
 # Include this CMake module to get most of the settings needed to build
 SET (CMAKE_MODULE_PATH "/informatik/isr/tams/software/player64/share/cmake/Modules")
-#SET (CMAKE_INCLUDE_PATH "../../../tams/taser/ben/src/devices")
-#ADD_SUBDIRECTORY("${CMAKE_INCLUDE_PATH}" "${CMAKE_CURRENT_BINARY_DIR}/bensrc")
-#ADD_SUBDIRECTORY("../../../tams/taser/ben/src/devices" "${CMAKE_INCLUDE_PATH}/bensrc")
-#ADD_SUBDIRECTORY( ../../../tams/taser/ben/src/canserver ../../../tams/taser/ben/src/canserver/build)
-#ADD_SUBDIRECTORY( ../../../tams/taser/ben/src/devices ../../../tams/taser/ben/src/devices/build)
-#ADD_SUBDIRECTORY( ../../../tams/taser/ben/src ../../../tams/taser/ben/src)
+# TODO add CMakeLists.txt to directory
+ADD_SUBDIRECTORY( ../../../tams/taser/ben/src/devices ../../../tams/taser/ben/src/devices/build)
+
+
 # TODO remove QT dependency
 find_package ( Qt4 REQUIRED )
 include ( ${QT_USE_FILE} )
@@ -18,20 +16,16 @@ include_directories (
   ${QT_QTNETWORK_INCLUDE_DIR}
   .)
 
-#INCLUDE_DIRECTORIES (
-  #"/Users/sebastian/tams/taser/ben/src/devices"
-  #)
-
 INCLUDE (UsePlayerPlugin)
 
 PLAYER_ADD_PLUGIN_DRIVER (
   taserdriver
-  #SOURCES taserdriver drive
-  SOURCES taserdriver
+  SOURCES
+  taserdriver
   INCLUDEDIRS
   ../../../tams/taser/ben/src
   ../../../tams/taser/ben/src/devices
   ../../../tams/taser/ben/src/canserver
   ../../../tams/taser/ben/src/canbus
-  #CFLAGS -I../../../tams/taser/ben/src/devices -I../../../tams/taser/ben/src
+  ../../../robotdev/peak-linux-driver-7.3/driver
   )
