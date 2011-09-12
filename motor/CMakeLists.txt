@@ -6,17 +6,17 @@ SET (CMAKE_MODULE_PATH "/informatik/isr/tams/software/player64/share/cmake/Modul
 #SET (CMAKE_INCLUDE_PATH "/informatik/home/rockel/tams/taser/ben/src/devices")
 #ADD_SUBDIRECTORY("${CMAKE_INCLUDE_PATH}" "${CMAKE_CURRENT_BINARY_DIR}/bensrc")
 #ADD_SUBDIRECTORY("/informatik/home/rockel/tams/taser/ben/src/devices" "${CMAKE_INCLUDE_PATH}/bensrc")
-ADD_SUBDIRECTORY( ../../../tams/taser/ben/src/canserver ../../../tams/taser/ben/src/canserver/build)
-ADD_SUBDIRECTORY( ../../../tams/taser/ben/src/devices ../../../tams/taser/ben/src/devices/build)
-ADD_SUBDIRECTORY( ../../../tams/taser/ben/src ../../../tams/taser/ben/src)
+#ADD_SUBDIRECTORY( /informatik/home/rockel/tams/taser/ben/src/canserver /informatik/home/rockel/tams/taser/ben/src/canserver/build)
+#ADD_SUBDIRECTORY( /informatik/home/rockel/tams/taser/ben/src/devices /informatik/home/rockel/tams/taser/ben/src/devices/build)
+#ADD_SUBDIRECTORY( /informatik/home/rockel/tams/taser/ben/src /informatik/home/rockel/tams/taser/ben/src)
 # TODO remove QT dependency
-#find_package ( Qt4 REQUIRED )
-#include ( ${QT_USE_FILE} )
-#include_directories (
-  #${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
-  #${QT_QTCORE_INCLUDE_DIR} ${QT_QTGUI_INCLUDE_DIR}
-  #${QT_QTNETWORK_INCLUDE_DIR}
-  #.)
+find_package ( Qt4 REQUIRED )
+include ( ${QT_USE_FILE} )
+include_directories (
+  ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
+  ${QT_QTCORE_INCLUDE_DIR} ${QT_QTGUI_INCLUDE_DIR}
+  ${QT_QTNETWORK_INCLUDE_DIR}
+  .)
 
 #INCLUDE_DIRECTORIES (
   #"/Users/sebastian/tams/taser/ben/src/devices"
@@ -26,8 +26,12 @@ INCLUDE (UsePlayerPlugin)
 
 PLAYER_ADD_PLUGIN_DRIVER (
   taserdriver
-  SOURCES taserdriver drive
-  INCLUDEDIRS /Users/sebastian/tams/taser/ben/src/devices /Users/sebastian/tams/taser/ben/src
+  #SOURCES taserdriver drive
+  SOURCES taserdriver
+  INCLUDEDIRS
+  /informatik/home/rockel/tams/taser/ben/src
+  /informatik/home/rockel/tams/taser/ben/src/devices
+  /informatik/home/rockel/tams/taser/ben/src/canserver
+  /informatik/home/rockel/tams/taser/ben/src/canbus
+  #CFLAGS -I/informatik/home/rockel/tams/taser/ben/src/devices -I/informatik/home/rockel/tams/taser/ben/src
   )
-
-
