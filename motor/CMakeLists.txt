@@ -27,7 +27,9 @@ PLAYER_ADD_PLUGIN_DRIVER (
   taserdriver
   SOURCES
   taserdriver
-  ./devices/drive
+  #./devices/drive
+  #../base/logger
+  #udpclient
   INCLUDEDIRS
   ./devices
   ../base

@@ -35,7 +35,7 @@ class TaserDriver : public ThreadedDriver
 
 		//Battery battery;		///< a battery attached to CAN
 		//RemoteControl remoteControl;	///< a remoteControl attached to CAN
-    Drive drive;			///< the motors attached to CAN
+    //Drive drive;			///< the motors attached to CAN
 
   public:
     // Constructor; need that

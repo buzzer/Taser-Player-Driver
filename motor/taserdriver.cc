@@ -97,11 +97,11 @@ int TaserDriver::MainSetup()
 
 	// startup motors first, even if the incoming commands don't require them. Otherwise, as soon
 	// as we DO have a command that requires the motors, the server hangs during startMotors();
-	drive.startMotors();
+	//drive.startMotors();
 
 	// Instead of applying brakes (releasing them takes forever), we set Emergency Stop, which also
 	// applies the brakes, but can be undone much faster.
-	drive.setEmergencyStop(true);
+	//drive.setEmergencyStop(true);
 
 	puts("CanServer::CanServer(): brakes applied, ready and waiting.");
 
@@ -119,7 +119,7 @@ void TaserDriver::MainQuit()
 
   // Here you would shut the device down by, for example, closing a
   // serial port.
-	drive.setEmergencyStop(true);
+	//drive.setEmergencyStop(true);
 
   puts("Taser driver has been shutdown");
 }
@@ -416,12 +416,12 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
       // we start the motors in run() already.
       //drive.startMotors();
       usleep(20000);
-      drive.setEmergencyStop(false);
+      //drive.setEmergencyStop(false);
       usleep(20000);
-      driveInitialized = true;
+      //driveInitialized = true;
     }
 
-    drive.setMotorSpeeds(speedL, speedR);
+    //drive.setMotorSpeeds(speedL, speedR);
   }
   // TODO non direct control
 }
@@ -455,12 +455,12 @@ TaserDriver::ToggleMotorPower(unsigned char val)
 
     // TOGGLE BRAKES ON/OFF
     puts("enabling brakes.");
-    drive.setEmergencyStop(true);
+    //drive.setEmergencyStop(true);
 
   } else {
 
     puts("disabling brakes.");
-    drive.setEmergencyStop(false);
+    //drive.setEmergencyStop(false);
 
   }
 }
