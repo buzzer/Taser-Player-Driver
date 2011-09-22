@@ -43,8 +43,8 @@
 #include "taserdriver.h"
 #include <cmath>
 #include <iostream>
-#include "packet.h"
-#include "protocol_can.h"
+//#include "packet.h"
+//#include "protocol_can.h"
 
 // A factory creation function, declared outside of the class so that it
 // can be invoked without any object context (alternatively, you can
@@ -71,7 +71,7 @@ void TaserDriver_Register(DriverTable* table)
 // pre-Setup() setup.
 TaserDriver::TaserDriver(ConfigFile* cf, int section)
     : ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
-             PLAYER_POSITION2D_CODE)
+             PLAYER_POSITION2D_CODE), QObject(0)
 {
   // Read an option from the configuration file
   this->foop = cf->ReadInt(section, "foo", 0);
@@ -99,21 +99,21 @@ int TaserDriver::MainSetup()
   int port = 4321;
   const char* host="tams61";
 
-	logger = Logger::instance();
-	logger->UdpClient("TaserDriver::MainSetup()");
-	logger->UdpClient("TaserDriver::MainSetup(): port is %d.", port);
+	//logger = Logger::instance();
+	//logger->UdpClient("TaserDriver::MainSetup()");
+	//logger->UdpClient("TaserDriver::MainSetup(): port is %d.", port);
 
   socket = new QTcpSocket();
-  socket->connectToHost(host, port);
+  //socket->connectToHost(host, port);
   //QHostAddress* hostAddr="tams61";
    //socket->connectToHost(hostAddr, port);
 	//timer= new QTimer();
 	//timer->setInterval(100);
 
 	//connect(timer, SIGNAL(timeout()), SLOT(slotSendWheelspeed()));
-  connect(socket, SIGNAL(readyRead()), SLOT(slotReadData()));
-	connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), SLOT(slotSocketError(QAbstractSocket::SocketError)));
-	connect(socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), SLOT(slotStateChanged(QAbstractSocket::SocketState)));
+  //connect(socket, SIGNAL(readyRead()), SLOT(slotReadData()));
+  //connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), SLOT(slotSocketError(QAbstractSocket::SocketError)));
+  //connect(socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), SLOT(slotStateChanged(QAbstractSocket::SocketState)));
 	// startup motors first, even if the incoming commands don't require them. Otherwise, as soon
 	// as we DO have a command that requires the motors, the server hangs during startMotors();
 	//drive.startMotors();
@@ -131,39 +131,39 @@ int TaserDriver::MainSetup()
 
 void TaserDriver::slotReadData()
 {
-	Packet response;
-	const int datalength= socket->bytesAvailable();
-	response.setData((const unsigned char*)socket->readAll().constData(), datalength);
-	qDebug() << "Kommando empfangen: " << response.getCommand() ;
-	int advanceLeft = response.popS32();
-	int advanceRight= response.popS32();
-	qDebug() << advanceLeft << advanceRight;
+  //Packet response;
+  //const int datalength= socket->bytesAvailable();
+  //response.setData((const unsigned char*)socket->readAll().constData(), datalength);
+  //qDebug() << "Kommando empfangen: " << response.getCommand() ;
+  //int advanceLeft = response.popS32();
+  //int advanceRight= response.popS32();
+  //qDebug() << advanceLeft << advanceRight;
 }
 void TaserDriver::slotSendWheelspeed()
 {
-	qDebug() << "Sende test packet";
-	Packet request(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
-	request.pushS32(100000);
-	request.pushS32(100000);
-	request.send(socket);
+  //qDebug() << "Sende test packet";
+  //Packet request(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
+  //request.pushS32(100000);
+  //request.pushS32(100000);
+  //request.send(socket);
 
-	socket->flush();
+  //socket->flush();
 
-	Packet request2(CAN_REQUEST | CAN_WHEELADVANCES);
-	request2.send(socket);
+  //Packet request2(CAN_REQUEST | CAN_WHEELADVANCES);
+  //request2.send(socket);
 }
 void TaserDriver::slotStateChanged(QAbstractSocket::SocketState state)
 {
-	qDebug() << state << socket->errorString();
-	if (state == QAbstractSocket::ConnectedState)
-	{
-		Packet brakeOff(CAN_REQUEST | CAN_BRAKES_DISABLE);
-		brakeOff.send(socket);
+  //qDebug() << state << socket->errorString();
+  //if (state == QAbstractSocket::ConnectedState)
+  //{
+    //Packet brakeOff(CAN_REQUEST | CAN_BRAKES_DISABLE);
+    //brakeOff.send(socket);
 
-		//timer->start();
-	} else {
-		//timer->stop();
-	}
+    ////timer->start();
+  //} else {
+    ////timer->stop();
+  //}
 }
 
 

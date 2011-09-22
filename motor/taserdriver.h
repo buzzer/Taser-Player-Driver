@@ -9,11 +9,12 @@
 #define MOTOR_DEF_MAX_TURNSPEED DTOR(45)
 //#include "drive.h"
 //#include "battery.h"
-#include <QtCore/QObject>
-#include <QtNetwork/QTcpSocket>
+//#include <QtCore/QObject>
+#include <QObject>
+//#include <QtNetwork/QTcpSocket>
 //#include <QCoreApplication>
-//#include <QTcpSocket>
-#include "logger.h"
+#include <QTcpSocket>
+//#include "logger.h"
 
 typedef struct player_taser_data
 {
@@ -24,11 +25,12 @@ typedef struct player_taser_data
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
 class TaserDriver : public ThreadedDriver, public QObject
+//class TaserDriver : public ThreadedDriver
 {
-  Q_OBJECT
+  //Q_OBJECT
   private:
-    Logger* logger;
- 		QTcpSocket *socket;
+    //Logger* logger;
+    QTcpSocket *socket;
 
     player_taser_data_t taser_data;
 
@@ -47,10 +49,9 @@ class TaserDriver : public ThreadedDriver, public QObject
     //Drive drive;			///< the motors attached to CAN
     //
   private slots:
-		void slotStateChanged(QAbstractSocket::SocketState state);
-		//void slotStateChanged();
-		void slotSendWheelspeed();
-		void slotReadData();
+    void slotStateChanged(QAbstractSocket::SocketState state);
+    void slotSendWheelspeed();
+    void slotReadData();
 
   public:
     // Constructor; need that

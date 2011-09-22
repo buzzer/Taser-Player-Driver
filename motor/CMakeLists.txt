@@ -15,12 +15,6 @@ IF( CMAKE_BUILD_TYPE STREQUAL "Debug" )
 ENDIF()
 
 
-SET(SRC_FILES
-  taserdriver
-  packet
-  logger
-  )
-
 # TODO remove QT dependency
 find_package ( Qt4 REQUIRED )
 include ( ${QT_USE_FILE} )
@@ -30,21 +24,15 @@ include_directories (
   ${QT_QTNETWORK_INCLUDE_DIR}
   .)
 
+SET(SRC_FILES
+  taserdriver
+  #packet
+  #logger
+  )
+
 INCLUDE (UsePlayerPlugin)
 
-PLAYER_ADD_PLUGIN_DRIVER (
-  ${SRC_FILES}
-  #taserdriver
-  #packet
-  #logger
-  SOURCES
-  ${SRC_FILES}
-  #taserdriver
-  #packet
-  #logger
-  #INCLUDEDIRS
-  #../../../robotdev/peak-linux-driver-7.3/driver
-  )
+PLAYER_ADD_PLUGIN_DRIVER ( ${SRC_FILES} SOURCES ${SRC_FILES} )
 
 #ADD_EXECUTABLE(${SRC_FILES})
 #TARGET_LINK_LIBRARIES(taserdriver udpclient ${QT_LIBRARIES})
