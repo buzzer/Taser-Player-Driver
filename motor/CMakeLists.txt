@@ -2,7 +2,8 @@ cmake_MINIMUM_REQUIRED (VERSION 2.4 FATAL_ERROR)
 PROJECT (playerplugin_taser)
 
 # Include this CMake module to get most of the settings needed to build
-SET (CMAKE_MODULE_PATH "/informatik/isr/tams/software/player64/share/cmake/Modules")
+#SET (CMAKE_MODULE_PATH "/informatik/isr/tams/software/player64/share/cmake/Modules")
+SET (CMAKE_MODULE_PATH "/usr/share/cmake/Modules" "/informatik/home/rockel/local/share/cmake/Modules")
 # TODO add CMakeLists.txt to directory
 #ADD_SUBDIRECTORY( ../../../tams/taser/ben/src/devices ../../../tams/taser/ben/src/devices/build)
 
@@ -25,14 +26,14 @@ INCLUDE (UsePlayerPlugin)
 
 PLAYER_ADD_PLUGIN_DRIVER (
   taserdriver
+  #udpclient
   SOURCES
   taserdriver
-  #./devices/drive
-  #../base/logger
   #udpclient
   INCLUDEDIRS
-  ./devices
-  ../base
-  ../canbus
   ../../../robotdev/peak-linux-driver-7.3/driver
   )
+
+#ADD_EXECUTABLE(udpclient udpclient ${QT_LIBRARIES})
+#TARGET_LINK_LIBRARIES(taserdriver udpclient ${QT_LIBRARIES})
+TARGET_LINK_LIBRARIES(taserdriver ${QT_LIBRARIES})

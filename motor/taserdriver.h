@@ -7,8 +7,8 @@
 // Default max speeds
 #define MOTOR_DEF_MAX_SPEED 0.5
 #define MOTOR_DEF_MAX_TURNSPEED DTOR(45)
-#include "drive.h"
-#include "battery.h"
+//#include "drive.h"
+//#include "battery.h"
 
 typedef struct player_taser_data
 {
