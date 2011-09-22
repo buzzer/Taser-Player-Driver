@@ -9,8 +9,11 @@
 #define MOTOR_DEF_MAX_TURNSPEED DTOR(45)
 //#include "drive.h"
 //#include "battery.h"
+#include <QtCore/QObject>
+#include <QtNetwork/QTcpSocket>
+//#include <QCoreApplication>
+//#include <QTcpSocket>
 #include "logger.h"
-#include <QTcpSocket>
 
 typedef struct player_taser_data
 {
@@ -20,8 +23,9 @@ typedef struct player_taser_data
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class TaserDriver : public ThreadedDriver
+class TaserDriver : public ThreadedDriver, public QObject
 {
+  Q_OBJECT
   private:
     Logger* logger;
  		QTcpSocket *socket;

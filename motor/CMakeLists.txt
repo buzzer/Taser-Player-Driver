@@ -3,7 +3,8 @@ PROJECT (playerplugin_taser)
 
 # Include this CMake module to get most of the settings needed to build
 #SET (CMAKE_MODULE_PATH "/informatik/isr/tams/software/player64/share/cmake/Modules")
-SET (CMAKE_MODULE_PATH "/usr/share/cmake/Modules" "/informatik/home/rockel/local/share/cmake/Modules")
+#SET (CMAKE_MODULE_PATH "/usr/share/cmake/Modules" "/informatik/home/rockel/local/share/cmake/Modules")
+SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/informatik/home/rockel/local/share/cmake/Modules")
 # TODO add CMakeLists.txt to directory
 #ADD_SUBDIRECTORY( ../../../tams/taser/ben/src/devices ../../../tams/taser/ben/src/devices/build)
 
@@ -12,6 +13,13 @@ SET(CMAKE_BUILD_TYPE "Debug")
 IF( CMAKE_BUILD_TYPE STREQUAL "Debug" )
   ADD_DEFINITIONS( -ggdb -pg -g3 -Wall )
 ENDIF()
+
+
+SET(SRC_FILES
+  taserdriver
+  packet
+  logger
+  )
 
 # TODO remove QT dependency
 find_package ( Qt4 REQUIRED )
@@ -25,15 +33,19 @@ include_directories (
 INCLUDE (UsePlayerPlugin)
 
 PLAYER_ADD_PLUGIN_DRIVER (
-  taserdriver
-  #udpclient
+  ${SRC_FILES}
+  #taserdriver
+  #packet
+  #logger
   SOURCES
-  taserdriver
-  #udpclient
-  INCLUDEDIRS
-  ../../../robotdev/peak-linux-driver-7.3/driver
+  ${SRC_FILES}
+  #taserdriver
+  #packet
+  #logger
+  #INCLUDEDIRS
+  #../../../robotdev/peak-linux-driver-7.3/driver
   )
 
-#ADD_EXECUTABLE(udpclient udpclient ${QT_LIBRARIES})
+#ADD_EXECUTABLE(${SRC_FILES})
 #TARGET_LINK_LIBRARIES(taserdriver udpclient ${QT_LIBRARIES})
 TARGET_LINK_LIBRARIES(taserdriver ${QT_LIBRARIES})
