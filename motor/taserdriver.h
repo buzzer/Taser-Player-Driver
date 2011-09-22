@@ -9,6 +9,8 @@
 #define MOTOR_DEF_MAX_TURNSPEED DTOR(45)
 //#include "drive.h"
 //#include "battery.h"
+#include "logger.h"
+#include <QTcpSocket>
 
 typedef struct player_taser_data
 {
@@ -21,6 +23,9 @@ typedef struct player_taser_data
 class TaserDriver : public ThreadedDriver
 {
   private:
+    Logger* logger;
+ 		QTcpSocket *socket;
+
     player_taser_data_t taser_data;
 
     player_devaddr_t position_id;
@@ -36,6 +41,12 @@ class TaserDriver : public ThreadedDriver
 		//Battery battery;		///< a battery attached to CAN
 		//RemoteControl remoteControl;	///< a remoteControl attached to CAN
     //Drive drive;			///< the motors attached to CAN
+    //
+  private slots:
+		void slotStateChanged(QAbstractSocket::SocketState state);
+		//void slotStateChanged();
+		void slotSendWheelspeed();
+		void slotReadData();
 
   public:
     // Constructor; need that
