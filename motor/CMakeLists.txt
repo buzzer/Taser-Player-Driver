@@ -16,8 +16,8 @@ ENDIF()
 
 
 # TODO remove QT dependency
-find_package ( Qt4 REQUIRED )
-SET(QT_USE_QTNETWORK 1)
+find_package ( Qt4  COMPONENTS QtNetwork REQUIRED )
+#SET(QT_USE_QTNETWORK 1)
 include ( ${QT_USE_FILE} )
 include_directories (
   ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR}
@@ -37,5 +37,6 @@ PLAYER_ADD_PLUGIN_DRIVER ( ${SRC_FILES} SOURCES ${SRC_FILES} )
 
 #ADD_EXECUTABLE(${SRC_FILES})
 #TARGET_LINK_LIBRARIES(taserdriver udpclient ${QT_LIBRARIES})
+#TARGET_LINK_LIBRARIES(taserdriver ${QT_LIBRARIES} ${QT_QTNETWORK_LIBRARY})
 TARGET_LINK_LIBRARIES(taserdriver ${QT_LIBRARIES})
-add_library (taserdriver SHARED ${SRC_FILES}) 
+#add_library (taserdriver SHARED ${SRC_FILES}) 
