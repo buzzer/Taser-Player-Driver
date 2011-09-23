@@ -42,8 +42,9 @@
 #include "taserdriver.h"
 #include <cmath>
 #include <iostream>
-//#include "packet.h"
-//#include "protocol_can.h"
+#include "packet.h"
+#include "protocol_can.h"
+#include <QDebug>
 
 // A factory creation function, declared outside of the class so that it
 // can be invoked without any object context (alternatively, you can
@@ -68,9 +69,9 @@ void TaserDriver_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
-TaserDriver::TaserDriver(ConfigFile* cf, int section)
-    : ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, 
-             PLAYER_POSITION2D_CODE), QObject(0)
+TaserDriver::TaserDriver(ConfigFile* cf, int section) : 
+  QObject(0),
+  ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
 {
   // Read an option from the configuration file
   this->foop = cf->ReadInt(section, "foo", 0);
@@ -98,6 +99,7 @@ int TaserDriver::MainSetup()
   int port = 4321;
   const char* host="tams61";
 
+  qDebug() << "Host,port: " << host << port;
 	//logger = Logger::instance();
 	//logger->UdpClient("TaserDriver::MainSetup()");
 	//logger->UdpClient("TaserDriver::MainSetup(): port is %d.", port);
@@ -130,10 +132,10 @@ int TaserDriver::MainSetup()
 
 void TaserDriver::slotReadData()
 {
-  //Packet response;
-  //const int datalength= socket->bytesAvailable();
-  //response.setData((const unsigned char*)socket->readAll().constData(), datalength);
-  //qDebug() << "Kommando empfangen: " << response.getCommand() ;
+  Packet response;
+  const int datalength= socket->bytesAvailable();
+  response.setData((const unsigned char*)socket->readAll().constData(), datalength);
+  qDebug() << "Data received: " << response.getCommand() ;
   //int advanceLeft = response.popS32();
   //int advanceRight= response.popS32();
   //qDebug() << advanceLeft << advanceRight;
@@ -153,7 +155,7 @@ void TaserDriver::slotSendWheelspeed()
 }
 void TaserDriver::slotStateChanged(QAbstractSocket::SocketState state)
 {
-  //qDebug() << state << socket->errorString();
+  qDebug() << "Socket state: " << state << socket->errorString();
   //if (state == QAbstractSocket::ConnectedState)
   //{
     //Packet brakeOff(CAN_REQUEST | CAN_BRAKES_DISABLE);
@@ -167,6 +169,8 @@ void TaserDriver::slotStateChanged(QAbstractSocket::SocketState state)
 void slotSocketError(QAbstractSocket::SocketError error)
 {
 
+  qDebug() << "Error, could not open socket: " << error;
+  puts("Error, could not open socket");
 }
 
 
@@ -249,8 +253,8 @@ TaserDriver::HandleConfig(QueuePointer & resp_queue,
                           player_msghdr * hdr,
                           void * data)
 {
-  int joint = 0;
-  double newSpeed = 0.0f;
+  //int joint = 0;
+  //double newSpeed = 0.0f;
 
   // check for position config requests
   if(Message::MatchMessage(hdr,PLAYER_MSGTYPE_REQ,
@@ -265,13 +269,16 @@ TaserDriver::HandleConfig(QueuePointer & resp_queue,
     player_position2d_set_odom_req_t* set_odom_req =
             (player_position2d_set_odom_req_t*)data;
 
-    // TODO set odometry
-    //this->sippacket->x_offset = ((int)rint(set_odom_req->pose.px*1e3)) -
-            //this->sippacket->xpos;
-    //this->sippacket->y_offset = ((int)rint(set_odom_req->pose.py*1e3)) -
-            //this->sippacket->ypos;
-    //this->sippacket->angle_offset = ((int)rint(RTOD(set_odom_req->pose.pa))) -
-            //this->sippacket->angle;
+    qDebug() << "Sending odometry data"
+      << set_odom_req->pose.px*1e6
+      << set_odom_req->pose.py*1e6
+      << set_odom_req->pose.pa*1e6;
+
+    Packet odomRequest(CAN_REQUEST | CAN_WHEELADVANCES);
+    odomRequest.pushS32(0);
+    odomRequest.send(socket);
+
+    socket->flush();
 
     this->Publish(this->position_id, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_SET_ODOM);
@@ -385,8 +392,8 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
   int speedDemand, turnRateDemand;
   double leftvel, rightvel;
   double rotational_term;
-  unsigned short absspeedDemand, absturnRateDemand;
-  unsigned char motorcommand[4];
+  //unsigned short absspeedDemand, absturnRateDemand;
+  //unsigned char motorcommand[4];
 
   speedDemand = (int)rint(position_cmd.vel.px * 1e3);
   turnRateDemand = (int)rint(RTOD(position_cmd.vel.pa));
@@ -453,32 +460,40 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
 
     //motorpacket.Build(motorcommand, 4);
     //this->SendReceive(&motorpacket);
-    puts("Set right velocity to ");
-    std::cout << rightvel << std::endl;
-    puts("Set left velocity to ");
-    std::cout << leftvel << std::endl;
+    //puts("Set right velocity to ");
+    //std::cout << rightvel << std::endl;
+    //puts("Set left velocity to ");
+    //std::cout << leftvel << std::endl;
 		// SET MOTOR SPEEDS
     // We shouldn't get packets requesting a wheelspeed higher than this...
     //int maximumWheelSpeeds = config->getMaximumWheelSpeed() * 1000000 * 1.1;
     // Convert from Player speed (m/s) to Taser speed (um/s)
     int speedL = (int)(leftvel * 1e6);
     int speedR = (int)(rightvel * 1e6);
-    int maximumWheelSpeeds = this->motor_max_speed;
+    //int maximumWheelSpeeds = this->motor_max_speed;
+    qDebug() << "Setting right velocity to " << speedR;
+    qDebug() << "Setting left velocity to " << speedL;
 
-    assert(abs(speedL) < maximumWheelSpeeds);
-    assert(abs(speedR) < maximumWheelSpeeds);
+    //assert(abs(speedL) < maximumWheelSpeeds);
+    //assert(abs(speedR) < maximumWheelSpeeds);
+    Packet request(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
+    request.pushS32(speedR);
+    request.pushS32(speedL);
+    request.send(socket);
 
-    static bool driveInitialized = false;
+    socket->flush();
 
-    if(!driveInitialized)
-    {
-      // we start the motors in run() already.
-      //drive.startMotors();
-      usleep(20000);
-      //drive.setEmergencyStop(false);
-      usleep(20000);
-      //driveInitialized = true;
-    }
+    //static bool driveInitialized = false;
+
+    //if(!driveInitialized)
+    //{
+      //// we start the motors in run() already.
+      ////drive.startMotors();
+      //usleep(20000);
+      ////drive.setEmergencyStop(false);
+      //usleep(20000);
+      ////driveInitialized = true;
+    //}
 
     //drive.setMotorSpeeds(speedL, speedR);
   }
@@ -489,7 +504,7 @@ int
 TaserDriver::HandleCommand(player_msghdr * hdr, void* data)
 {
   int retVal = -1;
-  struct timeval timeVal;
+  //struct timeval timeVal;
 
   if(Message::MatchMessage(hdr,
                            PLAYER_MSGTYPE_CMD,
@@ -513,12 +528,12 @@ TaserDriver::ToggleMotorPower(unsigned char val)
   {
 
     // TOGGLE BRAKES ON/OFF
-    puts("enabling brakes.");
+    //puts("enabling brakes.");
     //drive.setEmergencyStop(true);
 
   } else {
 
-    puts("disabling brakes.");
+    //puts("disabling brakes.");
     //drive.setEmergencyStop(false);
 
   }
@@ -563,18 +578,24 @@ void TaserDriver::Main()
 		// speed should be between -46656 and 46656 (-36 to 36 ^ 3)
 		// maximum Speed in m/s.
     // TODO read Odometer
+    Packet odomRequest(CAN_REQUEST | CAN_WHEELADVANCES);
+    odomRequest.send(socket);
+    socket->flush();
     // TODO read speed
+    Packet speedRequest(CAN_REQUEST | CAN_GET_WHEELSPEEDS);
+    speedRequest.send(socket);
+    socket->flush();
     // TODO read laser
-		float maximumTranslationSpeed = 1.0;
+    //float maximumTranslationSpeed = 1.0;
 
-		float speedLeft, speedRight;
+		//float speedLeft, speedRight;
 
 		//speedLeft = maximumTranslationSpeed / (double)46656 * (double)speed;
 		//speedRight= maximumTranslationSpeed / (double)46656 * (double)speed;
 
 		//puts("before steering: speedLeft %2.2f, speedRight %2.2f", speedLeft, speedRight);
 
-		float maximumRotationSpeed = maximumTranslationSpeed / 2.5;
+		//float maximumRotationSpeed = maximumTranslationSpeed / 2.5;
 
 		// steering should be between -36 and 36 (-36 to 36 ^ 3)
 		//float steeringFactor = (maximumRotationSpeed / (double)36.0 * (double)steering);

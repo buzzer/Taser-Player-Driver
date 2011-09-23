@@ -12,6 +12,7 @@ SET(CMAKE_BUILD_TYPE "Debug")
 # add debug definitions
 IF( CMAKE_BUILD_TYPE STREQUAL "Debug" )
   ADD_DEFINITIONS( -ggdb -pg -g3 -Wall )
+  ADD_DEFINITIONS( -DQT_DEBUG )
 ENDIF()
 
 
@@ -32,6 +33,8 @@ SET(SRC_FILES
   )
 SET(INC_FILES
   taserdriver.h
+  #packet.h
+  #protocol_can.h
   )
 
 # tell cmake to create .moc files for all files in the variable qtproject_SRCS that require such a file.
