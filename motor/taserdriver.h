@@ -15,6 +15,7 @@
 //#include <QCoreApplication>
 #include <QTcpSocket>
 //#include "logger.h"
+#include <libplayercore/playercore.h>
 
 typedef struct player_taser_data
 {
@@ -24,10 +25,11 @@ typedef struct player_taser_data
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class TaserDriver : public ThreadedDriver, public QObject
+//class TaserDriver : public ThreadedDriver, public QObject
+class TaserDriver : public QObject, public ThreadedDriver
 //class TaserDriver : public ThreadedDriver
 {
-  //Q_OBJECT
+  Q_OBJECT
   private:
     //Logger* logger;
     QTcpSocket *socket;
@@ -52,6 +54,7 @@ class TaserDriver : public ThreadedDriver, public QObject
     void slotStateChanged(QAbstractSocket::SocketState state);
     void slotSendWheelspeed();
     void slotReadData();
+    void slotSocketError(QAbstractSocket::SocketError error);
 
   public:
     // Constructor; need that

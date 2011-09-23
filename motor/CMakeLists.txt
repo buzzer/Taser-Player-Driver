@@ -30,10 +30,20 @@ SET(SRC_FILES
   #packet
   #logger
   )
+SET(INC_FILES
+  taserdriver.h
+  )
+
+# tell cmake to create .moc files for all files in the variable qtproject_SRCS that require such a file.
+# note: this assumes that you use #include "header.moc" in your files
+#qt4_automoc(${SRC_FILES})
+
+QT4_WRAP_CPP(MOC_SRCS ${INC_FILES})
+
 
 INCLUDE (UsePlayerPlugin)
 
-PLAYER_ADD_PLUGIN_DRIVER ( ${SRC_FILES} SOURCES ${SRC_FILES} )
+PLAYER_ADD_PLUGIN_DRIVER ( ${SRC_FILES} SOURCES ${SRC_FILES} ${MOC_SRCS} )
 
 #ADD_EXECUTABLE(${SRC_FILES})
 #TARGET_LINK_LIBRARIES(taserdriver udpclient ${QT_LIBRARIES})

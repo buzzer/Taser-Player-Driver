@@ -38,7 +38,6 @@
 #endif
 #include <string>
 
-#include <libplayercore/playercore.h>
 
 #include "taserdriver.h"
 #include <cmath>
@@ -104,16 +103,16 @@ int TaserDriver::MainSetup()
 	//logger->UdpClient("TaserDriver::MainSetup(): port is %d.", port);
 
   socket = new QTcpSocket();
-  //socket->connectToHost(host, port);
+  socket->connectToHost(host, port);
   //QHostAddress* hostAddr="tams61";
    //socket->connectToHost(hostAddr, port);
 	//timer= new QTimer();
 	//timer->setInterval(100);
 
 	//connect(timer, SIGNAL(timeout()), SLOT(slotSendWheelspeed()));
-  //connect(socket, SIGNAL(readyRead()), SLOT(slotReadData()));
-  //connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), SLOT(slotSocketError(QAbstractSocket::SocketError)));
-  //connect(socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), SLOT(slotStateChanged(QAbstractSocket::SocketState)));
+  connect(socket, SIGNAL(readyRead()), SLOT(slotReadData()));
+  connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), SLOT(slotSocketError(QAbstractSocket::SocketError)));
+  connect(socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), SLOT(slotStateChanged(QAbstractSocket::SocketState)));
 	// startup motors first, even if the incoming commands don't require them. Otherwise, as soon
 	// as we DO have a command that requires the motors, the server hangs during startMotors();
 	//drive.startMotors();
@@ -122,7 +121,7 @@ int TaserDriver::MainSetup()
 	// applies the brakes, but can be undone much faster.
 	//drive.setEmergencyStop(true);
 
-	puts("CanServer::CanServer(): brakes applied, ready and waiting.");
+	//puts("CanServer::CanServer(): brakes applied, ready and waiting.");
 
   puts("Taser driver ready");
 
@@ -164,6 +163,10 @@ void TaserDriver::slotStateChanged(QAbstractSocket::SocketState state)
   //} else {
     ////timer->stop();
   //}
+}
+void slotSocketError(QAbstractSocket::SocketError error)
+{
+
 }
 
 
