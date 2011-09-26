@@ -1,14 +1,17 @@
-// server.cc
+/*
+ * 2011-09-26 Sebastian Rockel
+ * Server example
+ */
 #include "testServer.h"
 #include <iostream>
 using namespace std;
 
 Server::Server(QObject* parent): QObject(parent)
 {
-  connect(&server, SIGNAL(newConnection()),
-    this, SLOT(acceptConnection()));
+  connect(&server, SIGNAL(newConnection()), this, SLOT(acceptConnection()));
 
-  server.listen(QHostAddress::Any, 4321);
+  //server.listen(QHostAddress::Any, 4321);
+  server.listen(QHostAddress::LocalHost, 4321);
 }
 
 Server::~Server()
@@ -20,8 +23,7 @@ void Server::acceptConnection()
 {
   client = server.nextPendingConnection();
 
-  connect(client, SIGNAL(readyRead()),
-    this, SLOT(startRead()));
+  connect(client, SIGNAL(readyRead()), this, SLOT(startRead()));
 }
 
 void Server::startRead()
@@ -31,9 +33,6 @@ void Server::startRead()
   cout << buffer << endl;
   client->close();
 }
-
-// main.cc
-//#include "server.h"
 
 int main(int argc, char** argv)
 {

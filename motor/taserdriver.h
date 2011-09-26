@@ -7,15 +7,11 @@
 // Default max speeds
 #define MOTOR_DEF_MAX_SPEED 0.5
 #define MOTOR_DEF_MAX_TURNSPEED DTOR(45)
-//#include "drive.h"
-//#include "battery.h"
-//#include <QtCore/QObject>
 #include <QObject>
-//#include <QtNetwork/QTcpSocket>
-//#include <QCoreApplication>
 #include <QTcpSocket>
 #include "logger.h"
 #include <libplayercore/playercore.h>
+#include "packet.h"
 
 typedef struct player_taser_data
 {
@@ -25,9 +21,7 @@ typedef struct player_taser_data
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-//class TaserDriver : public ThreadedDriver, public QObject
 class TaserDriver : public QObject, public ThreadedDriver
-//class TaserDriver : public ThreadedDriver
 {
   Q_OBJECT
   private:
@@ -45,16 +39,18 @@ class TaserDriver : public QObject, public ThreadedDriver
     int motor_max_speed;
     int motor_max_turnspeed;
     int direct_wheel_vel_control; // false -> separate trans and rot vel
+    float curSpeed[2];
+    float batVoltage;
+    float motTemp[2];
+    int advances[2];
+    bool brakesEnable;
+    bool emergencyStopEnable;
 
-		//Battery battery;		///< a battery attached to CAN
-		//RemoteControl remoteControl;	///< a remoteControl attached to CAN
-    //Drive drive;			///< the motors attached to CAN
-    //
   private slots:
-    void slotStateChanged(QAbstractSocket::SocketState state);
+    void slotStateChanged(QAbstractSocket::SocketState);
     void slotSendWheelspeed();
     void slotReadData();
-    void slotSocketError(QAbstractSocket::SocketError error);
+    void slotSocketError(QAbstractSocket::SocketError);
 
   public:
     // Constructor; need that
@@ -77,6 +73,14 @@ class TaserDriver : public QObject, public ThreadedDriver
     void HandlePositionCommand(player_position2d_cmd_vel_t position_cmd);
 
   private:
+    void handleBatteryVoltage(Packet);
+    void handleWheelAdvances(Packet);
+    void handleMotorTemps(Packet);
+    void handleBrakesEnable(Packet);
+    void handleBrakesDisable(Packet);
+    void handleEmergStopEnable(Packet);
+    void handleEmergStopDisable(Packet);
+    void handleUnknownMsg(Packet);
 
     // Main function for device thread.
     virtual void Main();

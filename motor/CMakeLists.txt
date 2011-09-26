@@ -37,12 +37,14 @@ SET(LIB_PREFIX lib)
 SET(SRC_FILES ${LIB_NAME})
 SET(INC_FILES ${LIB_NAME}${HDR_EXT})
 
+SET(EXE_SERVER testServer)
+
 # tell cmake to create .moc files for all files in the variable qtproject_SRCS that require such a file.
 # note: this assumes that you use #include "header.moc" in your files
 #qt4_automoc(${SRC_FILES})
 
 QT4_WRAP_CPP(MOC_SRCS ${INC_FILES})
-QT4_WRAP_CPP(MOC_TEST_SRCS testServer.h)
+QT4_WRAP_CPP(MOC_TEST_SRCS ${EXE_SERVER}${HDR_EXT})
 
 INCLUDE (UsePlayerPlugin)
 
@@ -61,6 +63,5 @@ TARGET_LINK_LIBRARIES(
   )
 
 # Tests
-#ADD_EXECUTABLE (testServer testServer ${QT_LIBRARIES} ${MOC_TEST_SRCS})
-ADD_EXECUTABLE (testServer testServer ${MOC_TEST_SRCS} ${QT_QTCORE_LIBRARY} ${QT_QTCORE_LIBRARY} ${QT_QTTEST_LIBRARY}  )
-TARGET_LINK_LIBRARIES(testServer ${QT_LIBRARIES} ${QT_QTCORE_LIBRARY} ${QT_QTTEST_LIBRARY}  )
+ADD_EXECUTABLE (${EXE_SERVER} ${EXE_SERVER} ${MOC_TEST_SRCS})
+TARGET_LINK_LIBRARIES(${EXE_SERVER} ${QT_LIBRARIES} )

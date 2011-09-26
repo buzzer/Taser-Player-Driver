@@ -271,7 +271,7 @@ void Packet::setData(const unsigned char* data, const unsigned int length)
 		isValidPacket = false;
 		logger->Packet("Packet::setData(): cannot reconstruct packet. CMD is 0x%08x, MAGIC is 0x%08x, size %d, CRC is %d, should be %d, bufferlength was %d", *_packetCommand, *_packetMagic, *_packetSize, getCRC(), *_packetCRC, length);
 // 		abort("");
-		for(int i = 0; i < *_packetSize; i++)
+		for(unsigned int i = 0; i < *_packetSize; i++)
 		{
 			printf("0x%02x\n", _packetData[i]);
 		}

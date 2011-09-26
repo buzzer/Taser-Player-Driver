@@ -42,7 +42,7 @@
 #include "taserdriver.h"
 #include <cmath>
 #include <iostream>
-#include "packet.h"
+//#include "packet.h"
 #include "protocol_can.h"
 #include <QDebug>
 
@@ -70,7 +70,7 @@ void TaserDriver_Register(DriverTable* table)
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
 TaserDriver::TaserDriver(ConfigFile* cf, int section) :
-  QObject(0),
+  QObject(),
   ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
 {
   // Read an option from the configuration file
@@ -96,7 +96,8 @@ int TaserDriver::MainSetup()
   // configure a serial port.
 
   //printf("Was foo option given in config file? %d\n", this->foop);
-  QString hostName = "tams61";
+  //QString hostName = "tams61";
+  QString hostName = "localhost";
   uint16_t port = 4321;
 
   //qDebug() << "Host,port: " << host << port;
@@ -106,9 +107,9 @@ int TaserDriver::MainSetup()
 
   socket = new QTcpSocket();
   PLAYER_MSG2(0,"Connecting to %s:%d..", hostName.toStdString().data(), port);
-  
+
   socket->connectToHost(hostName, port);
-  if (true == socket->waitForConnected(1000))
+  if (true == socket->waitForConnected(5000))
   {
     PLAYER_MSG0(0,"Connected!");
   } else {
@@ -122,7 +123,7 @@ int TaserDriver::MainSetup()
 	//timer= new QTimer();
 	//timer->setInterval(100);
 
-	//connect(timer, SIGNAL(timeout()), SLOT(slotSendWheelspeed()));
+  //connect(timer, SIGNAL(timeout()), SLOT(slotSendWheelspeed()));
   connect(socket, SIGNAL(readyRead()), SLOT(slotReadData()));
   connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), SLOT(slotSocketError(QAbstractSocket::SocketError)));
   connect(socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), SLOT(slotStateChanged(QAbstractSocket::SocketState)));
@@ -141,27 +142,92 @@ int TaserDriver::MainSetup()
   return(0);
 }
 
-void TaserDriver::slotReadData()
+void
+TaserDriver::slotReadData(void)
 {
   Packet response;
-  const int datalength= socket->bytesAvailable();
-  response.setData((const unsigned char*)socket->readAll().constData(), datalength);
-  //qDebug() << "Data received: " << response.getCommand() ;
+  const int datalength = socket->bytesAvailable();
+
+  response.setData(
+      (const unsigned char*)socket->readAll().constData(),
+      datalength
+      );
+
   PLAYER_MSG1(0,"Data received: %d", response.getCommand());
-  //int advanceLeft = response.popS32();
-  //int advanceRight= response.popS32();
-  //qDebug() << advanceLeft << advanceRight;
+
+  switch (response.getCommand())
+  {
+    case (CAN_REPLY | CAN_BATTERYVOLTAGE) : handleBatteryVoltage(response);
+      break;
+    case (CAN_REPLY | CAN_WHEELADVANCES) : handleWheelAdvances(response);
+      break;
+    case (CAN_REPLY | CAN_MOTORTEMPS) : handleMotorTemps(response);
+      break;
+    case (CAN_REPLY | CAN_BRAKES_ENABLE) : handleBrakesEnable(response);
+      break;
+    case (CAN_REPLY | CAN_BRAKES_DISABLE) : handleBrakesDisable(response);
+      break;
+    case (CAN_REPLY | CAN_EMERGENCY_STOP_ENABLE) : handleEmergStopEnable(response);
+      break;
+    case (CAN_REPLY | CAN_EMERGENCY_STOP_DISABLE) : handleEmergStopDisable(response);
+      break;
+    default : handleUnknownMsg(response);
+      break;
+  }
 }
-void TaserDriver::slotSendWheelspeed()
+void TaserDriver::handleBatteryVoltage(Packet msg)
+{
+  batVoltage = msg.popF32();
+  PLAYER_MSG1(0,"Received battery voltage %f", batVoltage);
+}
+void TaserDriver::handleWheelAdvances(Packet msg)
+{
+  advances[0] = msg.popS32();
+  advances[1] = msg.popS32();
+  PLAYER_MSG2(0,"Received wheel advances %d, %d", advances[0], advances[1]);
+}
+void TaserDriver::handleMotorTemps(Packet msg)
+{
+  motTemp[0] = msg.popF32();
+  motTemp[1] = msg.popF32();
+  PLAYER_MSG2(0,"Received motor temps %f, %f", motTemp[0], motTemp[1]);
+}
+void TaserDriver::handleBrakesEnable(Packet msg)
+{
+  msg.popS32() == 0 ? brakesEnable=true : brakesEnable=false;
+  PLAYER_MSG1(0,"Received brakes enabled %s", brakesEnable==true?"true":"false");
+}
+void TaserDriver::handleBrakesDisable(Packet msg)
+{
+  msg.popS32() == 0 ? brakesEnable=false : brakesEnable=true;
+  PLAYER_MSG1(0,"Received brakes enabled %s", brakesEnable==true?"true":"false");
+}
+void TaserDriver::handleEmergStopEnable(Packet msg)
+{
+  msg.popS32() == 0 ? emergencyStopEnable=true : emergencyStopEnable=false;
+  PLAYER_MSG1(0,"Received emergency stop enabled %s", emergencyStopEnable==true?"true":"false");
+}
+void TaserDriver::handleEmergStopDisable(Packet msg)
+{
+  msg.popS32() == 0 ? emergencyStopEnable=false : emergencyStopEnable=true;
+  PLAYER_MSG1(0,"Received emergency stop enabled %s", emergencyStopEnable==true?"true":"false");
+}
+void TaserDriver::handleUnknownMsg(Packet msg)
+{
+    PLAYER_WARN1("Received unkown message %d, ignoring.",msg.getCommand());
+}
+
+void
+TaserDriver::slotSendWheelspeed(void)
 {
   PLAYER_MSG0(0,"::slotSendWheelspeed");
   //qDebug() << "Sende test packet";
-  //Packet request(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
-  //request.pushS32(100000);
-  //request.pushS32(100000);
-  //request.send(socket);
+  Packet request(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
+  request.pushS32((int)(curSpeed[0]*1e6));
+  request.pushS32((int)(curSpeed[1]*1e6));
+  request.send(socket);
 
-  //socket->flush();
+  socket->flush();
 
   //Packet request2(CAN_REQUEST | CAN_WHEELADVANCES);
   //request2.send(socket);
@@ -169,15 +235,17 @@ void TaserDriver::slotSendWheelspeed()
 void TaserDriver::slotStateChanged(QAbstractSocket::SocketState state)
 {
   qDebug() << "Socket state: " << state << socket->errorString();
-  //if (state == QAbstractSocket::ConnectedState)
-  //{
+  if (state == QAbstractSocket::ConnectedState)
+  {
     //Packet brakeOff(CAN_REQUEST | CAN_BRAKES_DISABLE);
     //brakeOff.send(socket);
 
     ////timer->start();
-  //} else {
+    PLAYER_MSG0(0,"Socket in connected state!");
+  } else {
     ////timer->stop();
-  //}
+    PLAYER_ERROR("Socket not in connected state!");
+  }
 }
 void slotSocketError(QAbstractSocket::SocketError error)
 {
