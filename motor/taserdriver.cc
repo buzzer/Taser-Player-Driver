@@ -96,11 +96,6 @@ int TaserDriver::MainSetup()
   // configure a serial port.
 
   //printf("Was foo option given in config file? %d\n", this->foop);
-  //const char* host="tams61";
-  //const char* host="tams61";
-  //const QString host="tams61";
-  //const std::string host="tams61";
-  //QString qhost = QString::fromStdString(host);
   QString hostName = "tams61";
   uint16_t port = 4321;
 
@@ -110,8 +105,6 @@ int TaserDriver::MainSetup()
   //logger->UdpClient("TaserDriver::MainSetup(): port is %d.", port);
 
   socket = new QTcpSocket();
-  //PLAYER_MSG0(0,"Connecting to host:port"+host.data());
-  //std::string connect="Connecting to host:port"+host;
   PLAYER_MSG2(0,"Connecting to %s:%d..", hostName.toStdString().data(), port);
   
   socket->connectToHost(hostName, port);
