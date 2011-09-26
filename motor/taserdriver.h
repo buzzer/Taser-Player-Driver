@@ -14,7 +14,7 @@
 //#include <QtNetwork/QTcpSocket>
 //#include <QCoreApplication>
 #include <QTcpSocket>
-//#include "logger.h"
+#include "logger.h"
 #include <libplayercore/playercore.h>
 
 typedef struct player_taser_data
@@ -31,7 +31,7 @@ class TaserDriver : public QObject, public ThreadedDriver
 {
   Q_OBJECT
   private:
-    //Logger* logger;
+    Logger* logger;
     QTcpSocket *socket;
 
     player_taser_data_t taser_data;

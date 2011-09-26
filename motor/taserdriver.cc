@@ -25,7 +25,7 @@
  * shared object.
  */
 
-// ONLY if you need something that was #define'd as a result of configure 
+// ONLY if you need something that was #define'd as a result of configure
 // (e.g., HAVE_CFMAKERAW), then #include <config.h>, like so:
 /*
 #include <config.h>
@@ -69,7 +69,7 @@ void TaserDriver_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
-TaserDriver::TaserDriver(ConfigFile* cf, int section) : 
+TaserDriver::TaserDriver(ConfigFile* cf, int section) :
   QObject(0),
   ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
 {
@@ -89,23 +89,41 @@ TaserDriver::TaserDriver(ConfigFile* cf, int section) :
 ////////////////////////////////////////////////////////////////////////////////
 // Set up the device.  Return 0 if things go well, and -1 otherwise.
 int TaserDriver::MainSetup()
-{   
+{
   puts("Taser driver initialising");
 
   // Here you do whatever is necessary to setup the device, like open and
   // configure a serial port.
 
   //printf("Was foo option given in config file? %d\n", this->foop);
-  int port = 4321;
-  const char* host="tams61";
+  //const char* host="tams61";
+  //const char* host="tams61";
+  //const QString host="tams61";
+  //const std::string host="tams61";
+  //QString qhost = QString::fromStdString(host);
+  QString hostName = "tams61";
+  uint16_t port = 4321;
 
-  qDebug() << "Host,port: " << host << port;
-	//logger = Logger::instance();
-	//logger->UdpClient("TaserDriver::MainSetup()");
-	//logger->UdpClient("TaserDriver::MainSetup(): port is %d.", port);
+  //qDebug() << "Host,port: " << host << port;
+  //logger = Logger::instance();
+  //logger->UdpClient("TaserDriver::MainSetup()");
+  //logger->UdpClient("TaserDriver::MainSetup(): port is %d.", port);
 
   socket = new QTcpSocket();
-  socket->connectToHost(host, port);
+  //PLAYER_MSG0(0,"Connecting to host:port"+host.data());
+  //std::string connect="Connecting to host:port"+host;
+  PLAYER_MSG2(0,"Connecting to %s:%d..", hostName.toStdString().data(), port);
+  
+  socket->connectToHost(hostName, port);
+  if (true == socket->waitForConnected(1000))
+  {
+    PLAYER_MSG0(0,"Connected!");
+  } else {
+    PLAYER_ERROR("Error connecting!");
+    //TODO uncomment
+    //return (1);
+  }
+
   //QHostAddress* hostAddr="tams61";
    //socket->connectToHost(hostAddr, port);
 	//timer= new QTimer();
@@ -135,13 +153,15 @@ void TaserDriver::slotReadData()
   Packet response;
   const int datalength= socket->bytesAvailable();
   response.setData((const unsigned char*)socket->readAll().constData(), datalength);
-  qDebug() << "Data received: " << response.getCommand() ;
+  //qDebug() << "Data received: " << response.getCommand() ;
+  PLAYER_MSG1(0,"Data received: %d", response.getCommand());
   //int advanceLeft = response.popS32();
   //int advanceRight= response.popS32();
   //qDebug() << advanceLeft << advanceRight;
 }
 void TaserDriver::slotSendWheelspeed()
 {
+  PLAYER_MSG0(0,"::slotSendWheelspeed");
   //qDebug() << "Sende test packet";
   //Packet request(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
   //request.pushS32(100000);
@@ -169,8 +189,8 @@ void TaserDriver::slotStateChanged(QAbstractSocket::SocketState state)
 void slotSocketError(QAbstractSocket::SocketError error)
 {
 
-  qDebug() << "Error, could not open socket: " << error;
-  puts("Error, could not open socket");
+  PLAYER_WARN("Error, could not open socket: ");
+  qDebug() << "  " << error;
 }
 
 
@@ -183,6 +203,16 @@ void TaserDriver::MainQuit()
   // Here you would shut the device down by, for example, closing a
   // serial port.
 	//drive.setEmergencyStop(true);
+  // TODO check for output
+  PLAYER_MSG0(0,"Disconnecting socket..");
+  socket->disconnectFromHost();
+  if (socket->state() == QAbstractSocket::UnconnectedState ||
+      socket->waitForDisconnected(1000))
+  {
+    PLAYER_MSG0(0,"Disconnected!");
+  } else {
+    PLAYER_WARN("Error on disconnecting!");
+  }
 
   puts("Taser driver has been shutdown");
 }
@@ -190,6 +220,7 @@ void TaserDriver::MainQuit()
 TaserDriver::~TaserDriver (void)
 {
   player_position2d_data_t_cleanup(&taser_data.position);
+
 }
 
 int
@@ -541,7 +572,7 @@ TaserDriver::ToggleMotorPower(unsigned char val)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main function for device thread
-void TaserDriver::Main() 
+void TaserDriver::Main()
 {
   int last_position_subscrcount=0;
 
