@@ -13,6 +13,7 @@ SET(CMAKE_BUILD_TYPE "Debug")
 IF( CMAKE_BUILD_TYPE STREQUAL "Debug" )
   ADD_DEFINITIONS( -ggdb -pg -g3 -Wall )
   ADD_DEFINITIONS( -DQT_DEBUG )
+  ADD_DEFINITIONS( -fPIC )
 ENDIF()
 
 
@@ -34,7 +35,7 @@ SET(SRC_FILES
 SET(INC_FILES
   taserdriver.h
   #packet.h
-  #protocol_can.h
+  protocol_can.h
   )
 
 # tell cmake to create .moc files for all files in the variable qtproject_SRCS that require such a file.
@@ -51,5 +52,12 @@ PLAYER_ADD_PLUGIN_DRIVER ( ${SRC_FILES} SOURCES ${SRC_FILES} ${MOC_SRCS} )
 #ADD_EXECUTABLE(${SRC_FILES})
 #TARGET_LINK_LIBRARIES(taserdriver udpclient ${QT_LIBRARIES})
 #TARGET_LINK_LIBRARIES(taserdriver ${QT_LIBRARIES} ${QT_QTNETWORK_LIBRARY})
-TARGET_LINK_LIBRARIES(taserdriver ${QT_LIBRARIES})
-#add_library (taserdriver SHARED ${SRC_FILES}) 
+add_library (packet STATIC packet.cpp ${QT_LIBRARIES}) 
+add_library (logger STATIC logger.cpp ${QT_LIBRARIES}) 
+#TARGET_LINK_LIBRARIES(taserdriver ${PROJECT_SOURCE_DIR}/build/libpacket.a ${QT_LIBRARIES})
+TARGET_LINK_LIBRARIES(taserdriver
+  ${PROJECT_SOURCE_DIR}/build/libpacket.a
+  ${PROJECT_SOURCE_DIR}/build/liblogger.a
+  ${QT_LIBRARIES})
+#TARGET_LINK_LIBRARIES(taserdriver ${QT_LIBRARIES})
+#add_library (packet SHARED ${SRC_FILES}) 
