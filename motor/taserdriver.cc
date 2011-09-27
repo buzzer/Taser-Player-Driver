@@ -100,11 +100,6 @@ int TaserDriver::MainSetup()
   QString hostName = "localhost";
   uint16_t port = 4321;
 
-  //qDebug() << "Host,port: " << host << port;
-  //logger = Logger::instance();
-  //logger->UdpClient("TaserDriver::MainSetup()");
-  //logger->UdpClient("TaserDriver::MainSetup(): port is %d.", port);
-
   socket = new QTcpSocket();
   PLAYER_MSG2(0,"Connecting to %s:%d..", hostName.toStdString().data(), port);
 
@@ -118,8 +113,6 @@ int TaserDriver::MainSetup()
     //return (1);
   }
 
-  //QHostAddress* hostAddr="tams61";
-   //socket->connectToHost(hostAddr, port);
 	//timer= new QTimer();
 	//timer->setInterval(100);
 
@@ -127,15 +120,6 @@ int TaserDriver::MainSetup()
   connect(socket, SIGNAL(readyRead()), SLOT(slotReadData()));
   connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), SLOT(slotSocketError(QAbstractSocket::SocketError)));
   connect(socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), SLOT(slotStateChanged(QAbstractSocket::SocketState)));
-	// startup motors first, even if the incoming commands don't require them. Otherwise, as soon
-	// as we DO have a command that requires the motors, the server hangs during startMotors();
-	//drive.startMotors();
-
-	// Instead of applying brakes (releasing them takes forever), we set Emergency Stop, which also
-	// applies the brakes, but can be undone much faster.
-	//drive.setEmergencyStop(true);
-
-	//puts("CanServer::CanServer(): brakes applied, ready and waiting.");
 
   puts("Taser driver ready");
 
@@ -153,9 +137,10 @@ TaserDriver::slotReadData(void)
       datalength
       );
 
-  PLAYER_MSG1(0,"Data received: %d", response.getCommand());
+  uint32_t command = response.getCommand();
+  PLAYER_MSG1(0,"Data received: %d", command);
 
-  switch (response.getCommand())
+  switch (command)
   {
     case (CAN_REPLY | CAN_BATTERYVOLTAGE) : handleBatteryVoltage(response);
       break;
@@ -179,38 +164,62 @@ void TaserDriver::handleBatteryVoltage(Packet msg)
 {
   batVoltage = msg.popF32();
   PLAYER_MSG1(0,"Received battery voltage %f", batVoltage);
+  //TODO this->Publish()
+  // put power data
+  //this->Publish(this->power_id,
+                //PLAYER_MSGTYPE_DATA,
+                //PLAYER_POWER_DATA_STATE,
+                //(void*)&(this->player_taser_data.power),
+                //sizeof(player_power_data_t),
+                //&timestampStandardSIP);
+  //
+  //TODO timestamp format
+  //double: seconds since epoch
 }
 void TaserDriver::handleWheelAdvances(Packet msg)
 {
   advances[0] = msg.popS32();
   advances[1] = msg.popS32();
   PLAYER_MSG2(0,"Received wheel advances %d, %d", advances[0], advances[1]);
+  //TODO this->Publish()
+  // put odometry data
+  //this->Publish(this->position_id,
+                //PLAYER_MSGTYPE_DATA,
+                //PLAYER_POSITION2D_DATA_STATE,
+                //(void*)&(this->p2os_data.position),
+                //sizeof(player_position2d_data_t),
+                //&timestampStandardSIP);
 }
 void TaserDriver::handleMotorTemps(Packet msg)
 {
   motTemp[0] = msg.popF32();
   motTemp[1] = msg.popF32();
   PLAYER_MSG2(0,"Received motor temps %f, %f", motTemp[0], motTemp[1]);
+  //TODO this->Publish()
 }
 void TaserDriver::handleBrakesEnable(Packet msg)
 {
   msg.popS32() == 0 ? brakesEnable=true : brakesEnable=false;
   PLAYER_MSG1(0,"Received brakes enabled %s", brakesEnable==true?"true":"false");
+  //TODO this->Publish()
 }
 void TaserDriver::handleBrakesDisable(Packet msg)
 {
   msg.popS32() == 0 ? brakesEnable=false : brakesEnable=true;
   PLAYER_MSG1(0,"Received brakes enabled %s", brakesEnable==true?"true":"false");
+  //TODO this->Publish()
 }
 void TaserDriver::handleEmergStopEnable(Packet msg)
 {
   msg.popS32() == 0 ? emergencyStopEnable=true : emergencyStopEnable=false;
   PLAYER_MSG1(0,"Received emergency stop enabled %s", emergencyStopEnable==true?"true":"false");
+  //TODO this->Publish()
 }
 void TaserDriver::handleEmergStopDisable(Packet msg)
 {
   msg.popS32() == 0 ? emergencyStopEnable=false : emergencyStopEnable=true;
   PLAYER_MSG1(0,"Received emergency stop enabled %s", emergencyStopEnable==true?"true":"false");
+  //TODO this->Publish()
 }
 void TaserDriver::handleUnknownMsg(Packet msg)
 {
@@ -221,36 +230,42 @@ void
 TaserDriver::slotSendWheelspeed(void)
 {
   PLAYER_MSG0(0,"::slotSendWheelspeed");
-  //qDebug() << "Sende test packet";
+
   Packet request(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
   request.pushS32((int)(curSpeed[0]*1e6));
   request.pushS32((int)(curSpeed[1]*1e6));
   request.send(socket);
 
+  //TODO check if needed
   socket->flush();
-
-  //Packet request2(CAN_REQUEST | CAN_WHEELADVANCES);
-  //request2.send(socket);
 }
 void TaserDriver::slotStateChanged(QAbstractSocket::SocketState state)
 {
   qDebug() << "Socket state: " << state << socket->errorString();
-  if (state == QAbstractSocket::ConnectedState)
-  {
-    //Packet brakeOff(CAN_REQUEST | CAN_BRAKES_DISABLE);
-    //brakeOff.send(socket);
 
-    ////timer->start();
-    PLAYER_MSG0(0,"Socket in connected state!");
-  } else {
-    ////timer->stop();
-    PLAYER_ERROR("Socket not in connected state!");
+  switch (state)
+  {
+    case QAbstractSocket::ConnectedState : PLAYER_MSG0(0,"Socket in connected state!");
+      break;
+    case QAbstractSocket::UnconnectedState : PLAYER_MSG0(0,"Socket in unconnected state!");
+      break;
+    case QAbstractSocket::HostLookupState : PLAYER_MSG0(0,"Socket in host lookup state!");
+      break;
+    case QAbstractSocket::ConnectingState : PLAYER_MSG0(0,"Socket in connecting state!");
+      break;
+    case QAbstractSocket::BoundState : PLAYER_MSG0(0,"Socket in bound state!");
+      break;
+    case QAbstractSocket::ClosingState : PLAYER_MSG0(0,"Socket in closing state!");
+      break;
+    case QAbstractSocket::ListeningState : PLAYER_MSG0(0,"Socket in closing state!");
+      break;
+    default: PLAYER_ERROR("Unknown socket state!");
+      break;
   }
 }
 void slotSocketError(QAbstractSocket::SocketError error)
 {
-
-  PLAYER_WARN("Error, could not open socket: ");
+  PLAYER_ERROR("Socket error: ");
   qDebug() << "  " << error;
 }
 
@@ -271,7 +286,9 @@ void TaserDriver::MainQuit()
       socket->waitForDisconnected(1000))
   {
     PLAYER_MSG0(0,"Disconnected!");
-  } else {
+  }
+  else
+  {
     PLAYER_WARN("Error on disconnecting!");
   }
 
@@ -319,6 +336,9 @@ TaserDriver::Unsubscribe(player_devaddr_t id)
   return(shutdownResult);
 }
 
+/*
+ * Dispatch incoming messages
+ */
 int TaserDriver::ProcessMessage(QueuePointer & resp_queue,
                                   player_msghdr * hdr,
                                   void * data)
@@ -333,11 +353,20 @@ int TaserDriver::ProcessMessage(QueuePointer & resp_queue,
 
   // Process other messages
   if(hdr->type == PLAYER_MSGTYPE_REQ)
+  {
     return(this->HandleConfig(resp_queue,hdr,data));
-  else if(hdr->type == PLAYER_MSGTYPE_CMD)
-    return(this->HandleCommand(hdr,data));
+  }
   else
-    return(-1);
+  {
+    if(hdr->type == PLAYER_MSGTYPE_CMD)
+    {
+      return(this->HandleCommand(hdr,data));
+    }
+    else
+    {
+      return(-1);
+    }
+  }
 }
 
 int
@@ -361,16 +390,19 @@ TaserDriver::HandleConfig(QueuePointer & resp_queue,
     player_position2d_set_odom_req_t* set_odom_req =
             (player_position2d_set_odom_req_t*)data;
 
-    qDebug() << "Sending odometry data"
-      << set_odom_req->pose.px*1e6
-      << set_odom_req->pose.py*1e6
-      << set_odom_req->pose.pa*1e6;
+    PLAYER_MSG3(0,"Setting odometry data: %f, %f, %f",
+    //qDebug() << "Sending odometry data"
+      set_odom_req->pose.px,
+      set_odom_req->pose.py,
+      set_odom_req->pose.pa
+      );
 
-    Packet odomRequest(CAN_REQUEST | CAN_WHEELADVANCES);
-    odomRequest.pushS32(0);
-    odomRequest.send(socket);
+    //TODO store odometry data
+    //Packet odomRequest(CAN_REQUEST | CAN_WHEELADVANCES);
+    //odomRequest.pushS32(0);
+    //odomRequest.send(socket);
 
-    socket->flush();
+    //socket->flush();
 
     this->Publish(this->position_id, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK, PLAYER_POSITION2D_REQ_SET_ODOM);
@@ -429,9 +461,9 @@ TaserDriver::HandleConfig(QueuePointer & resp_queue,
     //       given in the Saphira parameters.  For now, -0.1 is
     //       about right for a Pioneer 2DX.
     // TODO fix to suite Taser
-    geom.pose.px   = 0.0;
-    geom.pose.py   = 0.0;
-    geom.pose.pyaw = 0.0;
+    geom.pose.px   = 0.6;
+    geom.pose.py   = 0.6;
+    geom.pose.pyaw = 0.6;
     // get dimensions from the parameter table
     // TODO
     //geom.size.sl = PlayerRobotParams[param_idx].RobotLength / 1e3;
@@ -451,6 +483,7 @@ TaserDriver::HandleConfig(QueuePointer & resp_queue,
      *   0 = direct wheel velocity control (default)
      *   1 = separate translational and rotational control
      */
+    //TODO currently only direct whell control implemented
     if(hdr->size != sizeof(player_position2d_velocity_mode_config_t))
     {
       PLAYER_WARN("Arg to velocity control mode change request is wrong "
@@ -489,9 +522,13 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
 
   speedDemand = (int)rint(position_cmd.vel.px * 1e3);
   turnRateDemand = (int)rint(RTOD(position_cmd.vel.pa));
+  PLAYER_MSG1(0,"Speed demand: %f",speedDemand);
+  PLAYER_MSG1(0,"Turnrate demand: %f", turnRateDemand);
 
   if(this->direct_wheel_vel_control)
   {
+    PLAYER_MSG0(0,"Direct wheel control enabled");
+
     // convert xspeed and yawspeed into wheelspeeds
     rotational_term = (M_PI/180.0) * turnRateDemand /
       0.0056; //PlayerRobotParams[param_idx].DiffConvFactor;
@@ -528,68 +565,25 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
       }
     }
 
-    // Apply byte range bounds
-    //if (leftvel / 20 > 126)
-      //leftvel = 126 * 20;
-    //if (leftvel / 20 < -126)
-      //leftvel = -126 * 20;
-    //if (rightvel / 20 > 126)
-      //rightvel = 126 * 20;
-    //if (rightvel / 20 < -126)
-      //rightvel = -126 * 20;
-
-    // send the speed command
-    //motorcommand[0] = VEL2;
-    //motorcommand[1] = ARGINT;
-    //motorcommand[2] = (char)(rightvel /
-                             //PlayerRobotParams[param_idx].Vel2Divisor);
-    //motorcommand[3] = (char)(leftvel /
-                             //PlayerRobotParams[param_idx].Vel2Divisor);
-    //motorcommand[2] = (char)(rightvel /
-                             //20);
-    //motorcommand[3] = (char)(leftvel /
-                             //20);
-
-    //motorpacket.Build(motorcommand, 4);
-    //this->SendReceive(&motorpacket);
-    //puts("Set right velocity to ");
-    //std::cout << rightvel << std::endl;
-    //puts("Set left velocity to ");
-    //std::cout << leftvel << std::endl;
-		// SET MOTOR SPEEDS
-    // We shouldn't get packets requesting a wheelspeed higher than this...
-    //int maximumWheelSpeeds = config->getMaximumWheelSpeed() * 1000000 * 1.1;
     // Convert from Player speed (m/s) to Taser speed (um/s)
     int speedL = (int)(leftvel * 1e6);
     int speedR = (int)(rightvel * 1e6);
     //int maximumWheelSpeeds = this->motor_max_speed;
-    qDebug() << "Setting right velocity to " << speedR;
-    qDebug() << "Setting left velocity to " << speedL;
+    PLAYER_MSG1(0,"Setting left velocity to ", speedL);
+    PLAYER_MSG1(0,"Setting right velocity to ", speedR);
 
-    //assert(abs(speedL) < maximumWheelSpeeds);
-    //assert(abs(speedR) < maximumWheelSpeeds);
     Packet request(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
-    request.pushS32(speedR);
     request.pushS32(speedL);
+    request.pushS32(speedR);
     request.send(socket);
 
     socket->flush();
-
-    //static bool driveInitialized = false;
-
-    //if(!driveInitialized)
-    //{
-      //// we start the motors in run() already.
-      ////drive.startMotors();
-      //usleep(20000);
-      ////drive.setEmergencyStop(false);
-      //usleep(20000);
-      ////driveInitialized = true;
-    //}
-
-    //drive.setMotorSpeeds(speedL, speedR);
   }
-  // TODO non direct control
+  else
+  {
+    PLAYER_MSG0(0,"Direct wheel control enabled");
+    // TODO non direct control
+  }
 }
 
 int
@@ -612,23 +606,29 @@ TaserDriver::HandleCommand(player_msghdr * hdr, void* data)
   return retVal;
 }
 
-/* toggle motors on/off, according to val */
+/*
+ * toggle motors on/off, according to val
+ * 0 - disables motors, enables brakes
+ * 1 - enables motors, disables brakes
+ */
 void
-TaserDriver::ToggleMotorPower(unsigned char val)
+TaserDriver::ToggleMotorPower(uint8_t val)
 {
-  if (val == 0)
+  Packet brakes;
+  uint32_t command;
+
+  if (0 == val)
   {
-
-    // TOGGLE BRAKES ON/OFF
-    //puts("enabling brakes.");
-    //drive.setEmergencyStop(true);
-
-  } else {
-
-    //puts("disabling brakes.");
-    //drive.setEmergencyStop(false);
-
+    command = CAN_REQUEST | CAN_BRAKES_ENABLE;
   }
+  else
+  {
+    command = CAN_REQUEST | CAN_BRAKES_DISABLE;
+  }
+
+  brakes.setCommand(command);
+  brakes.send(socket);
+  PLAYER_MSG1(0,"Set motors to: %d (0-disabled|1-enabled)",val);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -667,45 +667,27 @@ void TaserDriver::Main()
     // Interact with the device, and push out the resulting data, using
     // Driver::Publish()
 
-		// speed should be between -46656 and 46656 (-36 to 36 ^ 3)
-		// maximum Speed in m/s.
-    // TODO read Odometer
+    // read Odometer
     Packet odomRequest(CAN_REQUEST | CAN_WHEELADVANCES);
     odomRequest.send(socket);
     socket->flush();
-    // TODO read speed
+    // read speed
     Packet speedRequest(CAN_REQUEST | CAN_GET_WHEELSPEEDS);
     speedRequest.send(socket);
     socket->flush();
+    // read battery
+    Packet batRequest(CAN_REQUEST | CAN_BATTERYVOLTAGE);
+    batRequest.send(socket);
+    socket->flush();
+    // read motor temperatures
+    Packet tempRequest(CAN_REQUEST | CAN_MOTORTEMPS);
+    tempRequest.send(socket);
+    socket->flush();
+
     // TODO read laser
-    //float maximumTranslationSpeed = 1.0;
-
-		//float speedLeft, speedRight;
-
-		//speedLeft = maximumTranslationSpeed / (double)46656 * (double)speed;
-		//speedRight= maximumTranslationSpeed / (double)46656 * (double)speed;
-
-		//puts("before steering: speedLeft %2.2f, speedRight %2.2f", speedLeft, speedRight);
-
-		//float maximumRotationSpeed = maximumTranslationSpeed / 2.5;
-
-		// steering should be between -36 and 36 (-36 to 36 ^ 3)
-		//float steeringFactor = (maximumRotationSpeed / (double)36.0 * (double)steering);
-		//puts("steeringFactor is %2.2f", steeringFactor);
-		// steeringfactor is -1 to +1
-
-		//speedLeft = speedLeft + steeringFactor;
-		//speedRight = speedRight - steeringFactor;
-
-		//puts("setting speed to %2.2f left, %2.2f right", speedLeft, speedRight);
-
-		//Packet requestSpeed(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
-		//requestSpeed.pushF32(speedLeft);
-		//requestSpeed.pushF32(speedRight);
-		//send(&requestSpeed);
 
     // Sleep (you might, for example, block on a read() instead)
-    usleep(100000);
+    usleep(500000);
   }
 }
 
@@ -722,4 +704,3 @@ extern "C" {
     return(0);
   }
 }
-
