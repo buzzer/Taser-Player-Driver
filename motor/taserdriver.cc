@@ -166,14 +166,15 @@ void TaserDriver::handleBatteryVoltage(Packet msg)
   PLAYER_MSG1(0,"Received battery voltage %f", batVoltage);
   //TODO this->Publish()
   // put power data
-  //this->Publish(this->power_id,
-                //PLAYER_MSGTYPE_DATA,
-                //PLAYER_POWER_DATA_STATE,
-                //(void*)&(this->player_taser_data.power),
-                //sizeof(player_power_data_t),
+  this->Publish(this->power_id,
+                PLAYER_MSGTYPE_DATA,
+                PLAYER_POWER_DATA_STATE,
+                (void*)&(this->taser_data.power),
+                sizeof(player_power_data_t),
                 //&timestampStandardSIP);
+                NULL);
   //
-  //TODO timestamp format
+  //TODO accurate timestamp
   //double: seconds since epoch
 }
 void TaserDriver::handleWheelAdvances(Packet msg)
@@ -181,14 +182,15 @@ void TaserDriver::handleWheelAdvances(Packet msg)
   advances[0] = msg.popS32();
   advances[1] = msg.popS32();
   PLAYER_MSG2(0,"Received wheel advances %d, %d", advances[0], advances[1]);
-  //TODO this->Publish()
+  // TODO convert from wheel advances to position (x,y,a)
   // put odometry data
-  //this->Publish(this->position_id,
-                //PLAYER_MSGTYPE_DATA,
-                //PLAYER_POSITION2D_DATA_STATE,
-                //(void*)&(this->p2os_data.position),
-                //sizeof(player_position2d_data_t),
+  this->Publish(this->position_id,
+                PLAYER_MSGTYPE_DATA,
+                PLAYER_POSITION2D_DATA_STATE,
+                (void*)&(this->taser_data.position),
+                sizeof(player_position2d_data_t),
                 //&timestampStandardSIP);
+                NULL);
 }
 void TaserDriver::handleMotorTemps(Packet msg)
 {

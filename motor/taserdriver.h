@@ -17,6 +17,8 @@ typedef struct player_taser_data
 {
   player_position2d_data_t position;
   player_power_data_t power;
+  player_opaque_data_t motorTemps;
+  player_opaque_data_t brakes;
 } __attribute__ ((packed)) player_taser_data_t;
 
 ////////////////////////////////////////////////////////////////////////////////
