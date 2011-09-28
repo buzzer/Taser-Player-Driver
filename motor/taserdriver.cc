@@ -71,11 +71,43 @@ void TaserDriver_Register(DriverTable* table)
 // pre-Setup() setup.
 TaserDriver::TaserDriver(ConfigFile* cf, int section) :
   QObject(),
-  ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
+  //ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
+  ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
-  // Read an option from the configuration file
-  this->foop = cf->ReadInt(section, "foo", 0);
+  // zero ids, so that we'll know later which interfaces were requested
+  memset(&this->position_id, 0, sizeof(player_devaddr_t));
+  memset(&this->power_id, 0, sizeof(player_devaddr_t));
 
+  this->position_subscriptions = 0;
+
+  // Do we create a robot position interface?
+  if(cf->ReadDeviceAddr(&(this->position_id), section, "provides",
+        PLAYER_POSITION2D_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->position_id) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
+  // Do we create a power interface?
+  if(cf->ReadDeviceAddr(&(this->power_id), section, "provides",
+                      PLAYER_POWER_CODE, -1, NULL) == 0)
+  {
+    if(this->AddInterface(this->power_id) != 0)
+    {
+      this->SetError(-1);
+      return;
+    }
+  }
+
+  // Read an option from the configuration file
+  this->hostName = cf->ReadString(section, "host", "localhost");
+  this->port = cf->ReadInt(section, "port", 1111);
+
+  this->direct_wheel_vel_control =
+          cf->ReadInt(section, "direct_wheel_vel_control", 1);
   this->motor_max_speed = (int)rint(1e3 * cf->ReadLength(section,
         "max_xspeed",
         MOTOR_DEF_MAX_SPEED));
@@ -95,31 +127,26 @@ int TaserDriver::MainSetup()
   // Here you do whatever is necessary to setup the device, like open and
   // configure a serial port.
 
-  //printf("Was foo option given in config file? %d\n", this->foop);
-  //QString hostName = "tams61";
-  QString hostName = "localhost";
-  uint16_t port = 4321;
-
   socket = new QTcpSocket();
-  PLAYER_MSG2(0,"Connecting to %s:%d..", hostName.toStdString().data(), port);
+  PLAYER_MSG2(0,"Connecting to %s:%d..", this->hostName.toStdString().data(), this->port);
 
-  socket->connectToHost(hostName, port);
+  socket->connectToHost(this->hostName, this->port);
   if (true == socket->waitForConnected(5000))
   {
     PLAYER_MSG0(0,"Connected!");
   } else {
     PLAYER_ERROR("Error connecting!");
-    //TODO uncomment
-    //return (1);
+    return (-1);
   }
 
-	//timer= new QTimer();
-	//timer->setInterval(100);
-
-  //connect(timer, SIGNAL(timeout()), SLOT(slotSendWheelspeed()));
+  // register QT signals and slots
   connect(socket, SIGNAL(readyRead()), SLOT(slotReadData()));
   connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), SLOT(slotSocketError(QAbstractSocket::SocketError)));
   connect(socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), SLOT(slotStateChanged(QAbstractSocket::SocketState)));
+
+  // to avoid qt warnings
+  qRegisterMetaType<QAbstractSocket::SocketError>("SocketError" );  // Result is 256
+  qRegisterMetaType<QAbstractSocket::SocketState>("SocketState" );  // Result is 257
 
   puts("Taser driver ready");
 
@@ -130,15 +157,15 @@ void
 TaserDriver::slotReadData(void)
 {
   Packet response;
-  const int datalength = socket->bytesAvailable();
+  const uint64_t datalength = socket->bytesAvailable();
 
   response.setData(
-      (const unsigned char*)socket->readAll().constData(),
+      (const uint8_t*)socket->readAll().constData(),
       datalength
       );
 
-  uint32_t command = response.getCommand();
-  PLAYER_MSG1(0,"Data received: %d", command);
+  const uint32_t command = response.getCommand();
+  PLAYER_MSG1(0,"%d bytes received with: %d", command);
 
   switch (command)
   {
@@ -164,8 +191,8 @@ void TaserDriver::handleBatteryVoltage(Packet msg)
 {
   batVoltage = msg.popF32();
   PLAYER_MSG1(0,"Received battery voltage %f", batVoltage);
-  //TODO this->Publish()
-  // put power data
+
+  // publish power data
   this->Publish(this->power_id,
                 PLAYER_MSGTYPE_DATA,
                 PLAYER_POWER_DATA_STATE,
@@ -516,14 +543,16 @@ TaserDriver::HandleConfig(QueuePointer & resp_queue,
 void
 TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
 {
-  int speedDemand, turnRateDemand;
+  double speedDemand, turnRateDemand;
   double leftvel, rightvel;
   double rotational_term;
   //unsigned short absspeedDemand, absturnRateDemand;
   //unsigned char motorcommand[4];
 
-  speedDemand = (int)rint(position_cmd.vel.px * 1e3);
-  turnRateDemand = (int)rint(RTOD(position_cmd.vel.pa));
+  //speedDemand = (int)rint(position_cmd.vel.px * 1e3);
+  speedDemand = position_cmd.vel.px;
+  //turnRateDemand = (int)rint(RTOD(position_cmd.vel.pa));
+  turnRateDemand = RTOD(position_cmd.vel.pa);
   PLAYER_MSG1(0,"Speed demand: %f",speedDemand);
   PLAYER_MSG1(0,"Turnrate demand: %f", turnRateDemand);
 
@@ -570,9 +599,11 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
     // Convert from Player speed (m/s) to Taser speed (um/s)
     int speedL = (int)(leftvel * 1e6);
     int speedR = (int)(rightvel * 1e6);
+    //int32_t speedL = (int32_t)((leftvel + speedDemand));
+    //int32_t speedR = (int32_t)((rightvel + speedDemand));
     //int maximumWheelSpeeds = this->motor_max_speed;
-    PLAYER_MSG1(0,"Setting left velocity to ", speedL);
-    PLAYER_MSG1(0,"Setting right velocity to ", speedR);
+    PLAYER_MSG1(0,"Setting left velocity to %d", speedL);
+    PLAYER_MSG1(0,"Setting right velocity to %d", speedR);
 
     Packet request(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
     request.pushS32(speedL);
@@ -583,7 +614,7 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
   }
   else
   {
-    PLAYER_MSG0(0,"Direct wheel control enabled");
+    PLAYER_MSG0(0,"Direct wheel control disabled");
     // TODO non direct control
   }
 }
@@ -630,7 +661,7 @@ TaserDriver::ToggleMotorPower(uint8_t val)
 
   brakes.setCommand(command);
   brakes.send(socket);
-  PLAYER_MSG1(0,"Set motors to: %d (0-disabled|1-enabled)",val);
+  PLAYER_MSG1(0,"Set motors enable to: %d (0-disabled|1-enabled)",val);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -638,6 +669,10 @@ TaserDriver::ToggleMotorPower(uint8_t val)
 void TaserDriver::Main()
 {
   int last_position_subscrcount=0;
+  Packet odomRequest(CAN_REQUEST | CAN_WHEELADVANCES);
+  //Packet speedRequest(CAN_REQUEST | CAN_GET_WHEELSPEEDS);
+  Packet batRequest(CAN_REQUEST  | CAN_BATTERYVOLTAGE);
+  Packet tempRequest(CAN_REQUEST | CAN_MOTORTEMPS);
 
   // The main loop; interact with the device here
   for(;;)
@@ -670,26 +705,22 @@ void TaserDriver::Main()
     // Driver::Publish()
 
     // read Odometer
-    Packet odomRequest(CAN_REQUEST | CAN_WHEELADVANCES);
-    odomRequest.send(socket);
-    socket->flush();
-    // read speed
-    Packet speedRequest(CAN_REQUEST | CAN_GET_WHEELSPEEDS);
-    speedRequest.send(socket);
-    socket->flush();
-    // read battery
-    Packet batRequest(CAN_REQUEST | CAN_BATTERYVOLTAGE);
-    batRequest.send(socket);
-    socket->flush();
+    //odomRequest.send(socket);
+    //socket->flush();
+    //speedRequest.send(socket);
+    //socket->flush();
+    //batRequest.send(socket);
     // read motor temperatures
-    Packet tempRequest(CAN_REQUEST | CAN_MOTORTEMPS);
-    tempRequest.send(socket);
+    //tempRequest.send(socket);
+
+    // Force to send the packet now, otherwise it most prabably gets delayed
+    // until some buffer is full
     socket->flush();
 
     // TODO read laser
 
     // Sleep (you might, for example, block on a read() instead)
-    usleep(500000);
+    usleep(1000000);
   }
 }
 

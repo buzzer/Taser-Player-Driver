@@ -29,6 +29,8 @@ class TaserDriver : public QObject, public ThreadedDriver
   private:
     Logger* logger;
     QTcpSocket *socket;
+    QString hostName;
+    uint16_t port;
 
     player_taser_data_t taser_data;
 

@@ -1,0 +1,18 @@
+# Sebastian Rockel, 2010-01-15
+#
+# Can be files or directories
+# That will be copied or sync to public
+# Must be all files needed for a minimal compiling/running system
+#
+CMakeLists.txt
+logger.cpp
+logger.h
+packet.cpp
+packet.h
+protocol_can.h
+tags
+taser.cfg
+taserdriver.cc
+taserdriver.h
+testServer.cc
+testServer.h
