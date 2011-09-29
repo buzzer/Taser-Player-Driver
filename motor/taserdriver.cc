@@ -71,7 +71,6 @@ void TaserDriver_Register(DriverTable* table)
 // pre-Setup() setup.
 TaserDriver::TaserDriver(ConfigFile* cf, int section) :
   QObject(),
-  //ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN, PLAYER_POSITION2D_CODE)
   ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   // zero ids, so that we'll know later which interfaces were requested
@@ -79,6 +78,7 @@ TaserDriver::TaserDriver(ConfigFile* cf, int section) :
   memset(&this->power_id, 0, sizeof(player_devaddr_t));
 
   this->position_subscriptions = 0;
+  this->power_subscriptions = 0;
 
   // Do we create a robot position interface?
   if(cf->ReadDeviceAddr(&(this->position_id), section, "provides",
@@ -102,18 +102,12 @@ TaserDriver::TaserDriver(ConfigFile* cf, int section) :
     }
   }
 
-  // Read an option from the configuration file
+  // Read options from the configuration file
   this->hostName = cf->ReadString(section, "host", "localhost");
-  this->port = cf->ReadInt(section, "port", 1111);
-
-  this->direct_wheel_vel_control =
-          cf->ReadInt(section, "direct_wheel_vel_control", 1);
-  this->motor_max_speed = (int)rint(1e3 * cf->ReadLength(section,
-        "max_xspeed",
-        MOTOR_DEF_MAX_SPEED));
-  this->motor_max_turnspeed = (int)rint(RTOD(cf->ReadAngle(section,
-        "max_yawspeed",
-        MOTOR_DEF_MAX_TURNSPEED)));
+  this->port = (uint16_t)cf->ReadInt(section, "port", 1111);
+  this->direct_wheel_vel_control = (uint32_t)cf->ReadInt(section, "direct_wheel_vel_control", 1);
+  this->motor_max_speed = (float)fabs(cf->ReadLength(section, "max_xspeed", MOTOR_DEF_MAX_SPEED));
+  this->motor_max_turnspeed = (float)fabs(cf->ReadAngle(section, "max_yawspeed", MOTOR_DEF_MAX_TURNSPEED));
 
   return;
 }
@@ -138,21 +132,37 @@ int TaserDriver::MainSetup()
     PLAYER_ERROR("Error connecting!");
     return (-1);
   }
-
-  // register QT signals and slots
-  connect(socket, SIGNAL(readyRead()), SLOT(slotReadData()));
-  connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), SLOT(slotSocketError(QAbstractSocket::SocketError)));
-  connect(socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), SLOT(slotStateChanged(QAbstractSocket::SocketState)));
+  PLAYER_MSG1(0,"Socket state: %d",socket->state());
+  if (socket->state() != QTcpSocket::ConnectedState)
+  {
+    PLAYER_ERROR("Error: socket not in connected state");
+  }
 
   // to avoid qt warnings
-  qRegisterMetaType<QAbstractSocket::SocketError>("SocketError" );  // Result is 256
-  qRegisterMetaType<QAbstractSocket::SocketState>("SocketState" );  // Result is 257
+  qRegisterMetaType<QAbstractSocket::SocketError>("SocketError");
+  qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
+
+  // register QT signals and slots
+  connect(socket, SIGNAL(readyRead()), SLOT(slotReadData()), Qt::DirectConnection);
+
+  connect(socket, SIGNAL(error(QAbstractSocket::SocketError)),
+      SLOT(slotSocketError(QAbstractSocket::SocketError)), Qt::DirectConnection);
+
+  connect(socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)),
+      SLOT(slotStateChanged(QAbstractSocket::SocketState)), Qt::DirectConnection);
+
+  connect(socket, SIGNAL(connected()), SLOT(slotConnected()), Qt::DirectConnection);
 
   puts("Taser driver ready");
 
   return(0);
 }
 
+void
+TaserDriver::slotConnected(void)
+{
+  PLAYER_MSG0(0,"Socket in connected state!");
+}
 void
 TaserDriver::slotReadData(void)
 {
@@ -255,19 +265,19 @@ void TaserDriver::handleUnknownMsg(Packet msg)
     PLAYER_WARN1("Received unkown message %d, ignoring.",msg.getCommand());
 }
 
-void
-TaserDriver::slotSendWheelspeed(void)
-{
-  PLAYER_MSG0(0,"::slotSendWheelspeed");
+//void
+//TaserDriver::slotSendWheelspeed(void)
+//{
+  //PLAYER_MSG0(0,"::slotSendWheelspeed");
 
-  Packet request(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
-  request.pushS32((int)(curSpeed[0]*1e6));
-  request.pushS32((int)(curSpeed[1]*1e6));
-  request.send(socket);
+  //Packet request(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
+  //request.pushS32((int)(curSpeed[0]*1e6));
+  //request.pushS32((int)(curSpeed[1]*1e6));
+  //request.send(socket);
 
-  //TODO check if needed
-  socket->flush();
-}
+  ////TODO check if needed
+  //socket->flush();
+//}
 void TaserDriver::slotStateChanged(QAbstractSocket::SocketState state)
 {
   qDebug() << "Socket state: " << state << socket->errorString();
@@ -327,7 +337,7 @@ void TaserDriver::MainQuit()
 TaserDriver::~TaserDriver (void)
 {
   player_position2d_data_t_cleanup(&taser_data.position);
-
+  player_power_data_t_cleanup (&taser_data.power);
 }
 
 int
@@ -340,7 +350,16 @@ TaserDriver::Subscribe(player_devaddr_t id)
   {
     // also increment the appropriate subscription counter
     if(Device::MatchDeviceAddress(id, this->position_id))
+    {
       this->position_subscriptions++;
+    }
+    else
+    {
+      if(Device::MatchDeviceAddress(id, this->power_id))
+      {
+        this->power_subscriptions++;
+      }
+    }
   }
 
   return(setupResult);
@@ -360,6 +379,14 @@ TaserDriver::Unsubscribe(player_devaddr_t id)
       this->position_subscriptions--;
       assert(this->position_subscriptions >= 0);
     }
+    else
+    {
+      if(Device::MatchDeviceAddress(id, this->power_id))
+      {
+        this->power_subscriptions--;
+        assert(this->power_subscriptions >= 0);
+      }
+    }
   }
 
   return(shutdownResult);
@@ -377,6 +404,8 @@ int TaserDriver::ProcessMessage(QueuePointer & resp_queue,
   // return -1, and a NACK will be sent for you, if a response is required.
 
   // following copied from p2os driver
+  // Check for capabilities requests first
+  HANDLE_CAPABILITY_REQUEST (position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_REQ, PLAYER_CAPABILITIES_REQ);
   // Position2d caps
   HANDLE_CAPABILITY_REQUEST (position_id, resp_queue, hdr, data, PLAYER_MSGTYPE_CMD, PLAYER_POSITION2D_CMD_VEL);
 
@@ -452,6 +481,7 @@ TaserDriver::HandleConfig(QueuePointer & resp_queue,
     }
     player_position2d_power_config_t* power_config =
             (player_position2d_power_config_t*)data;
+
     this->ToggleMotorPower(power_config->state);
 
     this->Publish(this->position_id, resp_queue,
@@ -490,13 +520,15 @@ TaserDriver::HandleConfig(QueuePointer & resp_queue,
     //       given in the Saphira parameters.  For now, -0.1 is
     //       about right for a Pioneer 2DX.
     // TODO fix to suite Taser
-    geom.pose.px   = 0.6;
-    geom.pose.py   = 0.6;
-    geom.pose.pyaw = 0.6;
+    geom.pose.px   = 0.0;
+    geom.pose.py   = 0.0;
+    geom.pose.pyaw = 0.0;
     // get dimensions from the parameter table
-    // TODO
+    // TODO put in seperate configuration
     //geom.size.sl = PlayerRobotParams[param_idx].RobotLength / 1e3;
     //geom.size.sw = PlayerRobotParams[param_idx].RobotWidth / 1e3;
+    geom.size.sl = 0.35;
+    geom.size.sw = 0.35;
 
     this->Publish(this->position_id, resp_queue,
                   PLAYER_MSGTYPE_RESP_ACK,
@@ -558,6 +590,7 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
 
   if(this->direct_wheel_vel_control)
   {
+    // convert xspeed and yawspeed into wheelspeeds
     PLAYER_MSG0(0,"Direct wheel control enabled");
 
     // convert xspeed and yawspeed into wheelspeeds
@@ -614,8 +647,10 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
   }
   else
   {
+    // do separate trans and rot vels
     PLAYER_MSG0(0,"Direct wheel control disabled");
     // TODO non direct control
+    PLAYER_ERROR("Separate trans and rot vels not yet supported");
   }
 }
 
@@ -709,18 +744,23 @@ void TaserDriver::Main()
     //socket->flush();
     //speedRequest.send(socket);
     //socket->flush();
-    //batRequest.send(socket);
+    if (this->power_subscriptions > 0)
+    {
+      batRequest.send(socket);
+      // Force to send the packet now, otherwise it most prabably gets delayed
+      // until some buffer is full
+      socket->flush();
+    }
     // read motor temperatures
     //tempRequest.send(socket);
 
-    // Force to send the packet now, otherwise it most prabably gets delayed
-    // until some buffer is full
-    socket->flush();
 
     // TODO read laser
 
+    //socket->readAll();
+    //socket->waitForReadyRead();
     // Sleep (you might, for example, block on a read() instead)
-    usleep(1000000);
+    usleep(100000);
   }
 }
 

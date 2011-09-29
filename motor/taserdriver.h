@@ -24,6 +24,7 @@ typedef struct player_taser_data
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
 class TaserDriver : public QObject, public ThreadedDriver
+//class TaserDriver : public QCoreApplication, public ThreadedDriver
 {
   Q_OBJECT
   private:
@@ -38,11 +39,12 @@ class TaserDriver : public QObject, public ThreadedDriver
     player_devaddr_t power_id;
 
     int position_subscriptions;
+    int power_subscriptions;
 
     // Max motor speeds (mm/sec,deg/sec)
-    int motor_max_speed;
-    int motor_max_turnspeed;
-    int direct_wheel_vel_control; // false -> separate trans and rot vel
+    float motor_max_speed;
+    float motor_max_turnspeed;
+    uint32_t direct_wheel_vel_control; // false -> separate trans and rot vel
     float curSpeed[2];
     float batVoltage;
     float motTemp[2];
@@ -51,9 +53,10 @@ class TaserDriver : public QObject, public ThreadedDriver
     bool emergencyStopEnable;
 
   private slots:
-    void slotStateChanged(QAbstractSocket::SocketState);
-    void slotSendWheelspeed();
+    //void slotSendWheelspeed();
     void slotReadData();
+    void slotConnected();
+    void slotStateChanged(QAbstractSocket::SocketState);
     void slotSocketError(QAbstractSocket::SocketError);
 
   public:
@@ -93,5 +96,8 @@ class TaserDriver : public QObject, public ThreadedDriver
 
     int foop;
 };
+// Declare QT meta types
+Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
+Q_DECLARE_METATYPE(QAbstractSocket::SocketError)
 
 #endif
