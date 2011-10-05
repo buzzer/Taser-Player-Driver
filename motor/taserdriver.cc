@@ -121,15 +121,16 @@ int TaserDriver::MainSetup()
   // Here you do whatever is necessary to setup the device, like open and
   // configure a serial port.
 
-  socket = new QTcpSocket();
+  socket = new QTcpSocket(this);
   PLAYER_MSG2(0,"Connecting to %s:%d..", this->hostName.toStdString().data(), this->port);
 
   socket->connectToHost(this->hostName, this->port);
-  if (true == socket->waitForConnected(5000))
+  if (true == socket->waitForConnected(1000))
   {
     PLAYER_MSG0(0,"Connected!");
   } else {
     PLAYER_ERROR("Error connecting!");
+    PLAYER_WARN2("socket error: %d,%s", socket->error(), socket->errorString().toStdString().data());
     return (-1);
   }
   PLAYER_MSG1(0,"Socket state: %d",socket->state());
@@ -760,6 +761,12 @@ void TaserDriver::Main()
     //socket->readAll();
     //socket->waitForReadyRead();
     // Sleep (you might, for example, block on a read() instead)
+    while (socket->bytesAvailable() < (int)sizeof(quint16)) {
+             if (!socket->waitForReadyRead(100)) {
+                 PLAYER_WARN2("Socket error: %d,%s",socket->error(), socket->errorString().toStdString().data());
+                 return;
+             }
+         }
     usleep(100000);
   }
 }
