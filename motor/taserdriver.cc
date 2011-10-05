@@ -721,7 +721,7 @@ void TaserDriver::Main()
   Packet tempRequest(CAN_REQUEST | CAN_MOTORTEMPS);
 
   //Start QCoreApplication event loop
-  this->exec();
+  //this->exec();
 
   // The main loop; interact with the device here
   for(;;)
@@ -771,6 +771,10 @@ void TaserDriver::Main()
 
     // TODO read laser
     //socket->waitForReadyRead(50);
+    //Process QCoreApplication events manually, since we didn't start its own
+    //event loop!
+    //QCoreApplication::processEvents();
+    this->processEvents();
 
     //socket->readAll();
     //socket->waitForReadyRead();
