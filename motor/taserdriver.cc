@@ -122,22 +122,22 @@ int TaserDriver::MainSetup()
   // Here you do whatever is necessary to setup the device, like open and
   // configure a serial port.
 
-  socket = new QTcpSocket();
-  PLAYER_MSG2(0,"Connecting to %s:%d..", this->hostName.toStdString().data(), this->port);
+  //socket = new QTcpSocket();
+  PLAYER_MSG2(0,"Connecting to %s:%d..", this->hostName, this->port);
 
-  socket->connectToHost(this->hostName, this->port);
-  if (true == socket->waitForConnected(5000))
-  {
-    PLAYER_MSG0(0,"Connected!");
-  } else {
-    PLAYER_ERROR("Error connecting!");
-    return (-1);
-  }
-  PLAYER_MSG1(0,"Socket state: %d",socket->state());
-  if (socket->state() != QTcpSocket::ConnectedState)
-  {
-    PLAYER_ERROR("Error: socket not in connected state");
-  }
+  //socket->connectToHost(this->hostName, this->port);
+  //if (true == socket->waitForConnected(5000))
+  //{
+    //PLAYER_MSG0(0,"Connected!");
+  //} else {
+    //PLAYER_ERROR("Error connecting!");
+    //return (-1);
+  //}
+  //PLAYER_MSG1(0,"Socket state: %d",socket->state());
+  //if (socket->state() != QTcpSocket::ConnectedState)
+  //{
+    //PLAYER_ERROR("Error: socket not in connected state");
+  //}
 
   // to avoid qt warnings
   //qRegisterMetaType<QAbstractSocket::SocketError>("SocketError");
@@ -204,73 +204,73 @@ int TaserDriver::MainSetup()
       //break;
   //}
 //}
-void TaserDriver::handleBatteryVoltage(Packet msg)
-{
-  batVoltage = msg.popF32();
-  PLAYER_MSG1(0,"Received battery voltage %f", batVoltage);
+//void TaserDriver::handleBatteryVoltage(Packet msg)
+//{
+  //batVoltage = msg.popF32();
+  //PLAYER_MSG1(0,"Received battery voltage %f", batVoltage);
 
-  // publish power data
-  this->Publish(this->power_id,
-                PLAYER_MSGTYPE_DATA,
-                PLAYER_POWER_DATA_STATE,
-                (void*)&(this->taser_data.power),
-                sizeof(player_power_data_t),
-                //&timestampStandardSIP);
-                NULL);
-  //
-  //TODO accurate timestamp
-  //double: seconds since epoch
-}
-void TaserDriver::handleWheelAdvances(Packet msg)
-{
-  advances[0] = msg.popS32();
-  advances[1] = msg.popS32();
-  PLAYER_MSG2(0,"Received wheel advances %d, %d", advances[0], advances[1]);
-  // TODO convert from wheel advances to position (x,y,a)
-  // put odometry data
-  this->Publish(this->position_id,
-                PLAYER_MSGTYPE_DATA,
-                PLAYER_POSITION2D_DATA_STATE,
-                (void*)&(this->taser_data.position),
-                sizeof(player_position2d_data_t),
-                //&timestampStandardSIP);
-                NULL);
-}
-void TaserDriver::handleMotorTemps(Packet msg)
-{
-  motTemp[0] = msg.popF32();
-  motTemp[1] = msg.popF32();
-  PLAYER_MSG2(0,"Received motor temps %f, %f", motTemp[0], motTemp[1]);
-  //TODO this->Publish()
-}
-void TaserDriver::handleBrakesEnable(Packet msg)
-{
-  msg.popS32() == 0 ? brakesEnable=true : brakesEnable=false;
-  PLAYER_MSG1(0,"Received brakes enabled %s", brakesEnable==true?"true":"false");
-  //TODO this->Publish()
-}
-void TaserDriver::handleBrakesDisable(Packet msg)
-{
-  msg.popS32() == 0 ? brakesEnable=false : brakesEnable=true;
-  PLAYER_MSG1(0,"Received brakes enabled %s", brakesEnable==true?"true":"false");
-  //TODO this->Publish()
-}
-void TaserDriver::handleEmergStopEnable(Packet msg)
-{
-  msg.popS32() == 0 ? emergencyStopEnable=true : emergencyStopEnable=false;
-  PLAYER_MSG1(0,"Received emergency stop enabled %s", emergencyStopEnable==true?"true":"false");
-  //TODO this->Publish()
-}
-void TaserDriver::handleEmergStopDisable(Packet msg)
-{
-  msg.popS32() == 0 ? emergencyStopEnable=false : emergencyStopEnable=true;
-  PLAYER_MSG1(0,"Received emergency stop enabled %s", emergencyStopEnable==true?"true":"false");
-  //TODO this->Publish()
-}
-void TaserDriver::handleUnknownMsg(Packet msg)
-{
-    PLAYER_WARN1("Received unkown message %d, ignoring.",msg.getCommand());
-}
+  //// publish power data
+  //this->Publish(this->power_id,
+                //PLAYER_MSGTYPE_DATA,
+                //PLAYER_POWER_DATA_STATE,
+                //(void*)&(this->taser_data.power),
+                //sizeof(player_power_data_t),
+                ////&timestampStandardSIP);
+                //NULL);
+  ////
+  ////TODO accurate timestamp
+  ////double: seconds since epoch
+//}
+//void TaserDriver::handleWheelAdvances(Packet msg)
+//{
+  //advances[0] = msg.popS32();
+  //advances[1] = msg.popS32();
+  //PLAYER_MSG2(0,"Received wheel advances %d, %d", advances[0], advances[1]);
+  //// TODO convert from wheel advances to position (x,y,a)
+  //// put odometry data
+  //this->Publish(this->position_id,
+                //PLAYER_MSGTYPE_DATA,
+                //PLAYER_POSITION2D_DATA_STATE,
+                //(void*)&(this->taser_data.position),
+                //sizeof(player_position2d_data_t),
+                ////&timestampStandardSIP);
+                //NULL);
+//}
+//void TaserDriver::handleMotorTemps(Packet msg)
+//{
+  //motTemp[0] = msg.popF32();
+  //motTemp[1] = msg.popF32();
+  //PLAYER_MSG2(0,"Received motor temps %f, %f", motTemp[0], motTemp[1]);
+  ////TODO this->Publish()
+//}
+//void TaserDriver::handleBrakesEnable(Packet msg)
+//{
+  //msg.popS32() == 0 ? brakesEnable=true : brakesEnable=false;
+  //PLAYER_MSG1(0,"Received brakes enabled %s", brakesEnable==true?"true":"false");
+  ////TODO this->Publish()
+//}
+//void TaserDriver::handleBrakesDisable(Packet msg)
+//{
+  //msg.popS32() == 0 ? brakesEnable=false : brakesEnable=true;
+  //PLAYER_MSG1(0,"Received brakes enabled %s", brakesEnable==true?"true":"false");
+  ////TODO this->Publish()
+//}
+//void TaserDriver::handleEmergStopEnable(Packet msg)
+//{
+  //msg.popS32() == 0 ? emergencyStopEnable=true : emergencyStopEnable=false;
+  //PLAYER_MSG1(0,"Received emergency stop enabled %s", emergencyStopEnable==true?"true":"false");
+  ////TODO this->Publish()
+//}
+//void TaserDriver::handleEmergStopDisable(Packet msg)
+//{
+  //msg.popS32() == 0 ? emergencyStopEnable=false : emergencyStopEnable=true;
+  //PLAYER_MSG1(0,"Received emergency stop enabled %s", emergencyStopEnable==true?"true":"false");
+  ////TODO this->Publish()
+//}
+//void TaserDriver::handleUnknownMsg(Packet msg)
+//{
+    //PLAYER_WARN1("Received unkown message %d, ignoring.",msg.getCommand());
+//}
 
 //void
 //TaserDriver::slotSendWheelspeed(void)
@@ -327,16 +327,16 @@ void TaserDriver::MainQuit()
 	//drive.setEmergencyStop(true);
   // TODO check for output
   PLAYER_MSG0(0,"Disconnecting socket..");
-  socket->disconnectFromHost();
-  if (socket->state() == QAbstractSocket::UnconnectedState ||
-      socket->waitForDisconnected(1000))
-  {
-    PLAYER_MSG0(0,"Disconnected!");
-  }
-  else
-  {
-    PLAYER_WARN("Error on disconnecting!");
-  }
+  //socket->disconnectFromHost();
+  //if (socket->state() == QAbstractSocket::UnconnectedState ||
+      //socket->waitForDisconnected(1000))
+  //{
+    //PLAYER_MSG0(0,"Disconnected!");
+  //}
+  //else
+  //{
+    //PLAYER_WARN("Error on disconnecting!");
+  //}
 
   puts("Taser driver has been shutdown");
 }
@@ -645,12 +645,12 @@ TaserDriver::HandlePositionCommand(player_position2d_cmd_vel_t position_cmd)
     PLAYER_MSG1(0,"Setting left velocity to %d", speedL);
     PLAYER_MSG1(0,"Setting right velocity to %d", speedR);
 
-    Packet request(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
-    request.pushS32(speedL);
-    request.pushS32(speedR);
-    request.send(socket);
+    //Packet request(CAN_REQUEST | CAN_SET_WHEELSPEEDS);
+    //request.pushS32(speedL);
+    //request.pushS32(speedR);
+    //request.send(socket);
 
-    socket->flush();
+    //socket->flush();
   }
   else
   {
@@ -689,7 +689,7 @@ TaserDriver::HandleCommand(player_msghdr * hdr, void* data)
 void
 TaserDriver::ToggleMotorPower(uint8_t val)
 {
-  Packet brakes;
+  //Packet brakes;
   uint32_t command;
 
   if (0 == val)
@@ -701,8 +701,8 @@ TaserDriver::ToggleMotorPower(uint8_t val)
     command = CAN_REQUEST | CAN_BRAKES_DISABLE;
   }
 
-  brakes.setCommand(command);
-  brakes.send(socket);
+  //brakes.setCommand(command);
+  //brakes.send(socket);
   PLAYER_MSG1(0,"Set motors enable to: %d (0-disabled|1-enabled)",val);
 }
 
@@ -711,10 +711,28 @@ TaserDriver::ToggleMotorPower(uint8_t val)
 void TaserDriver::Main()
 {
   int last_position_subscrcount=0;
-  Packet odomRequest(CAN_REQUEST | CAN_WHEELADVANCES);
+  //Packet odomRequest(CAN_REQUEST | CAN_WHEELADVANCES);
   //Packet speedRequest(CAN_REQUEST | CAN_GET_WHEELSPEEDS);
-  Packet batRequest(CAN_REQUEST  | CAN_BATTERYVOLTAGE);
-  Packet tempRequest(CAN_REQUEST | CAN_MOTORTEMPS);
+  //Packet batRequest(CAN_REQUEST  | CAN_BATTERYVOLTAGE);
+  //Packet tempRequest(CAN_REQUEST | CAN_MOTORTEMPS);
+
+  // Boost stuff
+  boost::asio::io_service io_service; // 1.
+
+  boost::asio::ip::tcp::resolver resolver(io_service); // 2.
+  boost::asio::ip::tcp::resolver::query query(this->hostName, "4321"); // 3.
+  boost::asio::ip::tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
+  boost::asio::ip::tcp::resolver::iterator end; // 4.
+
+  boost::asio::ip::tcp::socket socket(io_service);
+  boost::system::error_code error = boost::asio::error::host_not_found;
+  while(error && endpoint_iterator != end) // 5.
+  {
+    socket.close();
+    socket.connect(*endpoint_iterator++, error);
+  }
+  if(error) // 6.
+    throw boost::system::system_error(error);
 
   //Start QCoreApplication event loop
   //this->exec();
@@ -756,10 +774,10 @@ void TaserDriver::Main()
     //socket->flush();
     if (this->power_subscriptions > 0)
     {
-      batRequest.send(socket);
-      // Force to send the packet now, otherwise it most prabably gets delayed
-      // until some buffer is full
-      socket->flush();
+      //batRequest.send(socket);
+      //// Force to send the packet now, otherwise it most prabably gets delayed
+      //// until some buffer is full
+      //socket->flush();
     }
     // read motor temperatures
     //tempRequest.send(socket);
@@ -774,6 +792,16 @@ void TaserDriver::Main()
 
     //socket->readAll();
     //socket->waitForReadyRead();
+    boost::array<char, 4> buf; // 8.
+    size_t len = socket.read_some(boost::asio::buffer(buf), error); // 9.
+
+    if(error == boost::asio::error::eof) // 10.
+        break; // Connection closed cleanly by peer.
+    else if(error)
+        throw boost::system::system_error(error);
+
+    std::cout << "[!]"; // 11.
+    std::cout.write(buf.data(), len); // 12.
     // Sleep (you might, for example, block on a read() instead)
     usleep(100000);
   }

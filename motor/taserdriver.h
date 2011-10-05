@@ -10,9 +10,9 @@
 //#include <QObject>
 //#include <QTcpSocket>
 //#include <QCoreApplication>
-#include "logger.h"
+//#include "logger.h"
 #include <libplayercore/playercore.h>
-#include "packet.h"
+//#include "packet.h"
 #include <iostream>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
@@ -31,9 +31,9 @@ typedef struct player_taser_data
 class TaserDriver : public ThreadedDriver
 {
   private:
-    Logger* logger;
-    QTcpSocket *socket;
-    QString hostName;
+    //Logger* logger;
+    //QTcpSocket *socket;
+    const char* hostName;
     uint16_t port;
 
     player_taser_data_t taser_data;
@@ -84,14 +84,14 @@ class TaserDriver : public ThreadedDriver
     void HandlePositionCommand(player_position2d_cmd_vel_t position_cmd);
 
   private:
-    void handleBatteryVoltage(Packet);
-    void handleWheelAdvances(Packet);
-    void handleMotorTemps(Packet);
-    void handleBrakesEnable(Packet);
-    void handleBrakesDisable(Packet);
-    void handleEmergStopEnable(Packet);
-    void handleEmergStopDisable(Packet);
-    void handleUnknownMsg(Packet);
+    //void handleBatteryVoltage(Packet);
+    //void handleWheelAdvances(Packet);
+    //void handleMotorTemps(Packet);
+    //void handleBrakesEnable(Packet);
+    //void handleBrakesDisable(Packet);
+    //void handleEmergStopEnable(Packet);
+    //void handleEmergStopDisable(Packet);
+    //void handleUnknownMsg(Packet);
 
     // Main function for device thread.
     virtual void Main();
