@@ -44,7 +44,6 @@
 #include <iostream>
 //#include "packet.h"
 #include "protocol_can.h"
-#include <QDebug>
 
 // A factory creation function, declared outside of the class so that it
 // can be invoked without any object context (alternatively, you can
@@ -55,10 +54,7 @@ TaserDriver_Init(ConfigFile* cf, int section)
 {
   // Create and return a new instance of this driver
   //return((Driver*)(new TaserDriver(cf, section)));
-  int argc=1;
-  char* argv[1];
-  argv[0]= NULL;
-  return((Driver*)(new TaserDriver(cf, section, (int&)argc, (char **)argv)));
+  return((Driver*)(new TaserDriver(cf, section)));
 }
 
 // A driver registration function, again declared outside of the class so
@@ -73,9 +69,9 @@ void TaserDriver_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
-TaserDriver::TaserDriver(ConfigFile* cf, int section, int & argc, char** argv) :
+TaserDriver::TaserDriver(ConfigFile* cf, int section) :
   //QObject(),
-  QCoreApplication(argc,argv),
+  //QCoreApplication(argc,argv),
   ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   // zero ids, so that we'll know later which interfaces were requested
@@ -144,70 +140,70 @@ int TaserDriver::MainSetup()
   }
 
   // to avoid qt warnings
-  qRegisterMetaType<QAbstractSocket::SocketError>("SocketError");
-  qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
+  //qRegisterMetaType<QAbstractSocket::SocketError>("SocketError");
+  //qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
 
-  // register QT signals and slots
-  //connect(socket, SIGNAL(readyRead()), SLOT(slotReadData()), Qt::DirectConnection);
-  connect(socket, SIGNAL(readyRead()), SLOT(slotReadData()));
+  //// register QT signals and slots
+  ////connect(socket, SIGNAL(readyRead()), SLOT(slotReadData()), Qt::DirectConnection);
+  //connect(socket, SIGNAL(readyRead()), SLOT(slotReadData()));
 
+  ////connect(socket, SIGNAL(error(QAbstractSocket::SocketError)),
+      ////SLOT(slotSocketError(QAbstractSocket::SocketError)), Qt::DirectConnection);
   //connect(socket, SIGNAL(error(QAbstractSocket::SocketError)),
-      //SLOT(slotSocketError(QAbstractSocket::SocketError)), Qt::DirectConnection);
-  connect(socket, SIGNAL(error(QAbstractSocket::SocketError)),
-      SLOT(slotSocketError(QAbstractSocket::SocketError)));
+      //SLOT(slotSocketError(QAbstractSocket::SocketError)));
 
+  ////connect(socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)),
+      ////SLOT(slotStateChanged(QAbstractSocket::SocketState)), Qt::DirectConnection);
   //connect(socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)),
-      //SLOT(slotStateChanged(QAbstractSocket::SocketState)), Qt::DirectConnection);
-  connect(socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)),
-      SLOT(slotStateChanged(QAbstractSocket::SocketState)));
+      //SLOT(slotStateChanged(QAbstractSocket::SocketState)));
 
-  //connect(socket, SIGNAL(connected()), SLOT(slotConnected()), Qt::DirectConnection);
-  connect(socket, SIGNAL(connected()), SLOT(slotConnected()));
+  ////connect(socket, SIGNAL(connected()), SLOT(slotConnected()), Qt::DirectConnection);
+  //connect(socket, SIGNAL(connected()), SLOT(slotConnected()));
 
   puts("Taser driver ready");
 
   return(0);
 }
 
-void
-TaserDriver::slotConnected(void)
-{
-  PLAYER_MSG0(0,"Socket in connected state!");
-}
-void
-TaserDriver::slotReadData(void)
-{
-  Packet response;
-  const uint64_t datalength = socket->bytesAvailable();
+//void
+//TaserDriver::slotConnected(void)
+//{
+  //PLAYER_MSG0(0,"Socket in connected state!");
+//}
+//void
+//TaserDriver::slotReadData(void)
+//{
+  //Packet response;
+  //const uint64_t datalength = socket->bytesAvailable();
 
-  response.setData(
-      (const uint8_t*)socket->readAll().constData(),
-      datalength
-      );
+  //response.setData(
+      //(const uint8_t*)socket->readAll().constData(),
+      //datalength
+      //);
 
-  const uint32_t command = response.getCommand();
-  PLAYER_MSG1(0,"%d bytes received with: %d", command);
+  //const uint32_t command = response.getCommand();
+  //PLAYER_MSG1(0,"%d bytes received with: %d", command);
 
-  switch (command)
-  {
-    case (CAN_REPLY | CAN_BATTERYVOLTAGE) : handleBatteryVoltage(response);
-      break;
-    case (CAN_REPLY | CAN_WHEELADVANCES) : handleWheelAdvances(response);
-      break;
-    case (CAN_REPLY | CAN_MOTORTEMPS) : handleMotorTemps(response);
-      break;
-    case (CAN_REPLY | CAN_BRAKES_ENABLE) : handleBrakesEnable(response);
-      break;
-    case (CAN_REPLY | CAN_BRAKES_DISABLE) : handleBrakesDisable(response);
-      break;
-    case (CAN_REPLY | CAN_EMERGENCY_STOP_ENABLE) : handleEmergStopEnable(response);
-      break;
-    case (CAN_REPLY | CAN_EMERGENCY_STOP_DISABLE) : handleEmergStopDisable(response);
-      break;
-    default : handleUnknownMsg(response);
-      break;
-  }
-}
+  //switch (command)
+  //{
+    //case (CAN_REPLY | CAN_BATTERYVOLTAGE) : handleBatteryVoltage(response);
+      //break;
+    //case (CAN_REPLY | CAN_WHEELADVANCES) : handleWheelAdvances(response);
+      //break;
+    //case (CAN_REPLY | CAN_MOTORTEMPS) : handleMotorTemps(response);
+      //break;
+    //case (CAN_REPLY | CAN_BRAKES_ENABLE) : handleBrakesEnable(response);
+      //break;
+    //case (CAN_REPLY | CAN_BRAKES_DISABLE) : handleBrakesDisable(response);
+      //break;
+    //case (CAN_REPLY | CAN_EMERGENCY_STOP_ENABLE) : handleEmergStopEnable(response);
+      //break;
+    //case (CAN_REPLY | CAN_EMERGENCY_STOP_DISABLE) : handleEmergStopDisable(response);
+      //break;
+    //default : handleUnknownMsg(response);
+      //break;
+  //}
+//}
 void TaserDriver::handleBatteryVoltage(Packet msg)
 {
   batVoltage = msg.popF32();
@@ -289,35 +285,35 @@ void TaserDriver::handleUnknownMsg(Packet msg)
   ////TODO check if needed
   //socket->flush();
 //}
-void TaserDriver::slotStateChanged(QAbstractSocket::SocketState state)
-{
-  qDebug() << "Socket state: " << state << socket->errorString();
+//void TaserDriver::slotStateChanged(QAbstractSocket::SocketState state)
+//{
+  //qDebug() << "Socket state: " << state << socket->errorString();
 
-  switch (state)
-  {
-    case QAbstractSocket::ConnectedState : PLAYER_MSG0(0,"Socket in connected state!");
-      break;
-    case QAbstractSocket::UnconnectedState : PLAYER_MSG0(0,"Socket in unconnected state!");
-      break;
-    case QAbstractSocket::HostLookupState : PLAYER_MSG0(0,"Socket in host lookup state!");
-      break;
-    case QAbstractSocket::ConnectingState : PLAYER_MSG0(0,"Socket in connecting state!");
-      break;
-    case QAbstractSocket::BoundState : PLAYER_MSG0(0,"Socket in bound state!");
-      break;
-    case QAbstractSocket::ClosingState : PLAYER_MSG0(0,"Socket in closing state!");
-      break;
-    case QAbstractSocket::ListeningState : PLAYER_MSG0(0,"Socket in closing state!");
-      break;
-    default: PLAYER_ERROR("Unknown socket state!");
-      break;
-  }
-}
-void slotSocketError(QAbstractSocket::SocketError error)
-{
-  PLAYER_ERROR("Socket error: ");
-  qDebug() << "  " << error;
-}
+  //switch (state)
+  //{
+    //case QAbstractSocket::ConnectedState : PLAYER_MSG0(0,"Socket in connected state!");
+      //break;
+    //case QAbstractSocket::UnconnectedState : PLAYER_MSG0(0,"Socket in unconnected state!");
+      //break;
+    //case QAbstractSocket::HostLookupState : PLAYER_MSG0(0,"Socket in host lookup state!");
+      //break;
+    //case QAbstractSocket::ConnectingState : PLAYER_MSG0(0,"Socket in connecting state!");
+      //break;
+    //case QAbstractSocket::BoundState : PLAYER_MSG0(0,"Socket in bound state!");
+      //break;
+    //case QAbstractSocket::ClosingState : PLAYER_MSG0(0,"Socket in closing state!");
+      //break;
+    //case QAbstractSocket::ListeningState : PLAYER_MSG0(0,"Socket in closing state!");
+      //break;
+    //default: PLAYER_ERROR("Unknown socket state!");
+      //break;
+  //}
+//}
+//void slotSocketError(QAbstractSocket::SocketError error)
+//{
+  //PLAYER_ERROR("Socket error: ");
+  //qDebug() << "  " << error;
+//}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -774,7 +770,7 @@ void TaserDriver::Main()
     //Process QCoreApplication events manually, since we didn't start its own
     //event loop!
     //QCoreApplication::processEvents();
-    this->processEvents();
+    //this->processEvents();
 
     //socket->readAll();
     //socket->waitForReadyRead();
