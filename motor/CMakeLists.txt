@@ -41,6 +41,7 @@ SET(SRC_FILES ${LIB_NAME})
 SET(INC_FILES ${LIB_NAME}${HDR_EXT})
 
 SET(EXE_SERVER testServer)
+SET(EXE_ASIOSERVER asioServer)
 
 # tell cmake to create .moc files for all files in the variable qtproject_SRCS that require such a file.
 # note: this assumes that you use #include "header.moc" in your files
@@ -67,5 +68,7 @@ TARGET_LINK_LIBRARIES(
   )
 
 # Tests
-ADD_EXECUTABLE (${EXE_SERVER} ${EXE_SERVER} ${MOC_TEST_SRCS})
+ADD_EXECUTABLE (${EXE_SERVER} ${EXE_SERVER} ${MOC_TEST_SRCS} )
+ADD_EXECUTABLE (${EXE_ASIOSERVER} ${EXE_ASIOSERVER} )
 TARGET_LINK_LIBRARIES(${EXE_SERVER} ${QT_LIBRARIES} )
+TARGET_LINK_LIBRARIES(${EXE_ASIOSERVER} ${BOOST_LIBS} )
