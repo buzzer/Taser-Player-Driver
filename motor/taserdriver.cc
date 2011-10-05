@@ -54,7 +54,11 @@ Driver*
 TaserDriver_Init(ConfigFile* cf, int section)
 {
   // Create and return a new instance of this driver
-  return((Driver*)(new TaserDriver(cf, section)));
+  //return((Driver*)(new TaserDriver(cf, section)));
+  int argc=1;
+  char* argv[1];
+  argv[0]= NULL;
+  return((Driver*)(new TaserDriver(cf, section, (int&)argc, (char **)argv)));
 }
 
 // A driver registration function, again declared outside of the class so
@@ -69,8 +73,9 @@ void TaserDriver_Register(DriverTable* table)
 ////////////////////////////////////////////////////////////////////////////////
 // Constructor.  Retrieve options from the configuration file and do any
 // pre-Setup() setup.
-TaserDriver::TaserDriver(ConfigFile* cf, int section) :
-  QObject(),
+TaserDriver::TaserDriver(ConfigFile* cf, int section, int & argc, char** argv) :
+  //QObject(),
+  QCoreApplication(argc,argv),
   ThreadedDriver(cf, section, false, PLAYER_MSGQUEUE_DEFAULT_MAXLEN)
 {
   // zero ids, so that we'll know later which interfaces were requested
@@ -143,15 +148,21 @@ int TaserDriver::MainSetup()
   qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
 
   // register QT signals and slots
-  connect(socket, SIGNAL(readyRead()), SLOT(slotReadData()), Qt::DirectConnection);
+  //connect(socket, SIGNAL(readyRead()), SLOT(slotReadData()), Qt::DirectConnection);
+  connect(socket, SIGNAL(readyRead()), SLOT(slotReadData()));
 
+  //connect(socket, SIGNAL(error(QAbstractSocket::SocketError)),
+      //SLOT(slotSocketError(QAbstractSocket::SocketError)), Qt::DirectConnection);
   connect(socket, SIGNAL(error(QAbstractSocket::SocketError)),
-      SLOT(slotSocketError(QAbstractSocket::SocketError)), Qt::DirectConnection);
+      SLOT(slotSocketError(QAbstractSocket::SocketError)));
 
+  //connect(socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)),
+      //SLOT(slotStateChanged(QAbstractSocket::SocketState)), Qt::DirectConnection);
   connect(socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)),
-      SLOT(slotStateChanged(QAbstractSocket::SocketState)), Qt::DirectConnection);
+      SLOT(slotStateChanged(QAbstractSocket::SocketState)));
 
-  connect(socket, SIGNAL(connected()), SLOT(slotConnected()), Qt::DirectConnection);
+  //connect(socket, SIGNAL(connected()), SLOT(slotConnected()), Qt::DirectConnection);
+  connect(socket, SIGNAL(connected()), SLOT(slotConnected()));
 
   puts("Taser driver ready");
 
@@ -709,6 +720,9 @@ void TaserDriver::Main()
   Packet batRequest(CAN_REQUEST  | CAN_BATTERYVOLTAGE);
   Packet tempRequest(CAN_REQUEST | CAN_MOTORTEMPS);
 
+  //Start QCoreApplication event loop
+  this->exec();
+
   // The main loop; interact with the device here
   for(;;)
   {
@@ -756,6 +770,7 @@ void TaserDriver::Main()
 
 
     // TODO read laser
+    //socket->waitForReadyRead(50);
 
     //socket->readAll();
     //socket->waitForReadyRead();

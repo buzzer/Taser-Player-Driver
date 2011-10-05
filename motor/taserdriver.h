@@ -9,6 +9,7 @@
 #define MOTOR_DEF_MAX_TURNSPEED DTOR(45)
 #include <QObject>
 #include <QTcpSocket>
+#include <QCoreApplication>
 #include "logger.h"
 #include <libplayercore/playercore.h>
 #include "packet.h"
@@ -23,8 +24,8 @@ typedef struct player_taser_data
 
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
-class TaserDriver : public QObject, public ThreadedDriver
-//class TaserDriver : public QCoreApplication, public ThreadedDriver
+//class TaserDriver : public QObject, public ThreadedDriver
+class TaserDriver : public QCoreApplication, public ThreadedDriver
 {
   Q_OBJECT
   private:
@@ -61,7 +62,8 @@ class TaserDriver : public QObject, public ThreadedDriver
 
   public:
     // Constructor; need that
-    TaserDriver(ConfigFile* cf, int section);
+    //TaserDriver(ConfigFile* cf, int section);
+    TaserDriver(ConfigFile* cf, int section, int & argc, char** argv);
     ~TaserDriver(void);
 
     virtual int Subscribe(player_devaddr_t id);
