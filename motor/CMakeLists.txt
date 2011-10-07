@@ -2,7 +2,11 @@ CMAKE_MINIMUM_REQUIRED (VERSION 2.4 FATAL_ERROR)
 PROJECT (taserplayerplugin)
 
 # Include this CMake module to get most of the settings needed to build
-SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/informatik/home/rockel/local/share/cmake/Modules")
+SET (CMAKE_MODULE_PATH
+  ${CMAKE_MODULE_PATH}
+  "/informatik/home/rockel/local/share/cmake/Modules"
+  "/usr/share/cmake/Modules"
+  )
 
 SET(CMAKE_BUILD_TYPE "Debug")
 # Add debug definitions
@@ -15,6 +19,17 @@ ENDIF()
 ADD_DEFINITIONS( -fPIC )
 #ADD_DEFINITIONS( ${QT_DEFINITIONS} )
 #ADD_DEFINITIONS( -DQT )
+
+# Test framework
+#FIND_PACKAGE(CxxTest REQUIRED)
+#IF(CXXTEST_FOUND)
+  ##INCLUDE_DIRECTORIES(${CXXTEST_INCLUDE_DIR})
+  #ENABLE_TESTING()
+
+  #CXXTEST_ADD_TEST(unittest_TcpClient TcpClient_test.cc
+    #${CMAKE_CURRENT_SOURCE_DIR}/TcpClient_test.h)
+  #TARGET_LINK_LIBRARIES(unittest_TcpClient TcpClient) # as needed
+#ENDIF()
 
 # TODO remove QT dependency
 FIND_PACKAGE ( Qt4  COMPONENTS QtCore QtNetwork QtGui REQUIRED )
@@ -35,8 +50,14 @@ SET(LIB_PACKET packet)
 SET(LIB_LOGGER logger)
 SET(LIB_TCPCLIENT TcpClient)
 SET(LIB_PREFIX lib)
-SET(SRC_FILES ${LIB_NAME})
-SET(INC_FILES ${LIB_NAME}${HDR_EXT})
+SET(SRC_FILES
+  ${LIB_NAME}
+  ${LIB_TCPCLIENT}
+  )
+SET(INC_FILES
+  ${LIB_NAME}${HDR_EXT}
+  ${LIB_TCPCLIENT}${HDR_EXT}
+  )
 
 SET(EXE_SERVER testServer)
 
@@ -46,11 +67,10 @@ SET(EXE_SERVER testServer)
 
 QT4_WRAP_CPP(MOC_SRCS ${INC_FILES})
 QT4_WRAP_CPP(MOC_TEST_SRCS ${EXE_SERVER}${HDR_EXT})
-QT4_WRAP_CPP(MOC_TCP_SRCS ${LIB_TCPCLIENT})
 
 INCLUDE (UsePlayerPlugin)
 
-PLAYER_ADD_PLUGIN_DRIVER ( ${LIB_NAME} SOURCES ${SRC_FILES} ${MOC_SRCS} ${MOC_TCP_SRCS} )
+PLAYER_ADD_PLUGIN_DRIVER ( ${LIB_NAME} SOURCES ${SRC_FILES} ${MOC_SRCS} )
 
 # Include additional libraries
 ADD_LIBRARY (${LIB_PACKET} ${LIB_PACKET}) 

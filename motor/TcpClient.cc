@@ -1,33 +1,28 @@
-#include <QThread>
-#include <QTcpSocket>
-#include <stdint.h>
+/*
+ * 2011-10-07 Sebastian Rockel
+ */
+#include "TcpClient.h"
 
-class TcpClient : public QThread
-{
-  Q_OBJECT
-  private:
-    QString hostName;
-    uint16_t portNumber;
-    QTcpSocket socket;
-
-  public:
-    void run();
-    TcpClient(QString, uint16_t);
-};
-
-TcpClient(QString hostname, uint16_t portnr) : QObject()
+TcpClient::TcpClient(QString hostname, uint16_t portnr) : QThread()
 {
   this->hostName=hostname;
   this->portNumber=portnr;
 }
 void TcpClient::run()
 {
-  socket = new QtcpSocket(this);
+  socket = new QTcpSocket(this);
   //TODO signals
-  socket.connectToHost(hostName, portNumber);
+  socket->connectToHost(hostName, portNumber);
+  // Start QT thread
   exec();
 }
+TcpClient::~TcpClient()
+{
+  socket->close();
+  delete socket;
+}
 
+#ifdef CLIENTTEST
 int main(int argc, char** argv)
 {
   QString hostname="localhost";
@@ -37,3 +32,4 @@ int main(int argc, char** argv)
   tcpclient.wait();
   return 0;
 }
+#endif
