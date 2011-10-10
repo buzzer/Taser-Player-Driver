@@ -55,8 +55,9 @@ SET(SRC_FILES
   ${LIB_TCPCLIENT}
   )
 SET(INC_FILES
-  ${LIB_NAME}${HDR_EXT}
+  #${LIB_NAME}${HDR_EXT}
   ${LIB_TCPCLIENT}${HDR_EXT}
+  #TcpClientInterface.h
   )
 
 SET(EXE_SERVER testServer)

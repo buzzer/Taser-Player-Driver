@@ -13,6 +13,8 @@
 #include "logger.h"
 #include <libplayercore/playercore.h>
 #include "packet.h"
+#include "TcpClientInterface.h"
+#include "TcpClient.h"
 
 typedef struct player_taser_data
 {
@@ -25,12 +27,13 @@ typedef struct player_taser_data
 ////////////////////////////////////////////////////////////////////////////////
 // The class for the driver
 //class TaserDriver : public QObject, public ThreadedDriver
-class TaserDriver : public QCoreApplication, public ThreadedDriver
+class TaserDriver : public ThreadedDriver, public TcpClientInterface
+//class TaserDriver : public ThreadedDriver
 {
-  Q_OBJECT
   private:
-    Logger* logger;
-    QTcpSocket *socket;
+    //Logger* logger;
+    //QTcpSocket *socket;
+    TcpClient* tcpClient;
     QString hostName;
     uint16_t port;
 
@@ -53,17 +56,17 @@ class TaserDriver : public QCoreApplication, public ThreadedDriver
     bool brakesEnable;
     bool emergencyStopEnable;
 
-  private slots:
-    //void slotSendWheelspeed();
-    void slotReadData();
-    void slotConnected();
-    void slotStateChanged(QAbstractSocket::SocketState);
-    void slotSocketError(QAbstractSocket::SocketError);
+  //private slots:
+    ////void slotSendWheelspeed();
+    //void slotReadData();
+    //void slotConnected();
+    //void slotStateChanged(QAbstractSocket::SocketState);
+    //void slotSocketError(QAbstractSocket::SocketError);
 
   public:
     // Constructor; need that
     //TaserDriver(ConfigFile* cf, int section);
-    TaserDriver(ConfigFile* cf, int section, int & argc, char** argv);
+    TaserDriver(ConfigFile* cf, int section);
     ~TaserDriver(void);
 
     virtual int Subscribe(player_devaddr_t id);
@@ -80,6 +83,11 @@ class TaserDriver : public QCoreApplication, public ThreadedDriver
     int HandleCommand(player_msghdr * hdr, void * data);
     void ToggleMotorPower(unsigned char val);
     void HandlePositionCommand(player_position2d_cmd_vel_t position_cmd);
+
+    // implement interface methods
+    void onError(std::string*);
+    void onWrite(bool);
+    void onRead(Packet*);
 
   private:
     void handleBatteryVoltage(Packet);
@@ -99,7 +107,7 @@ class TaserDriver : public QCoreApplication, public ThreadedDriver
     int foop;
 };
 // Declare QT meta types
-Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
-Q_DECLARE_METATYPE(QAbstractSocket::SocketError)
+//Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
+//Q_DECLARE_METATYPE(QAbstractSocket::SocketError)
 
 #endif

@@ -3,19 +3,20 @@
  */
 #include "TcpClient.h"
 
-TcpClient::TcpClient(QString hostname, uint16_t portnr) : QThread()
+//TcpClient::TcpClient(QString hostname, uint16_t portnr) : QThread()
+TcpClient::TcpClient(QString hostname, uint16_t portnr) : QObject()
 {
   this->hostName=hostname;
   this->portNumber=portnr;
 }
-void TcpClient::run()
-{
-  socket = new QTcpSocket(this);
-  //TODO signals
-  socket->connectToHost(hostName, portNumber);
-  // Start QT thread
-  exec();
-}
+//void TcpClient::run()
+//{
+  //socket = new QTcpSocket(this);
+  ////TODO signals
+  //socket->connectToHost(hostName, portNumber);
+  //// Start QT thread
+  //exec();
+//}
 TcpClient::~TcpClient()
 {
   socket->close();
