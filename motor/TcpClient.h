@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include "packet.h"
 #include "TcpClientInterface.h"
+#include <vector>
 
 //class TcpClient : public QThread
 class TcpClient : public QObject
@@ -15,12 +16,23 @@ class TcpClient : public QObject
     QString hostName;
     uint16_t portNumber;
     QTcpSocket* socket;
+    QThread* thread;
+    // TODO use concurrent safe list
+    std::vector<TcpClientInterface*>* listeners;
 
 	private slots:
 		void slotReadData();
     void slotConnected();
-		void slotStateChanged(QAbstractSocket::SocketState state);
+		void slotStateChanged(QAbstractSocket::SocketState);
     void slotSocketError(QAbstractSocket::SocketError);
+    void handleBatteryVoltage(Packet);
+    void handleWheelAdvances(Packet);
+    void handleMotorTemps(Packet);
+    void handleBrakesEnable(Packet);
+    void handleBrakesDisable(Packet);
+    void handleEmergStopEnable(Packet);
+    void handleEmergStopDisable(Packet);
+    void handleUnknownMsg(Packet);
 
   public:
     void run();
@@ -29,8 +41,8 @@ class TcpClient : public QObject
     void send(Packet *packet);
 		bool receive(Packet *packet);
 
-    void addListener(TcpClientInterface* );
-    void removeListener(TcpClientInterface* );
+    std::vector<TcpClientInterface*>::iterator addListener(TcpClientInterface* );
+    void removeListener(std::vector<TcpClientInterface*>::iterator);
 };
 
 // Declare QT meta types

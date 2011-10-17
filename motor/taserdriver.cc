@@ -124,9 +124,13 @@ int TaserDriver::MainSetup()
   // Here you do whatever is necessary to setup the device, like open and
   // configure a serial port.
 
+  hostName = QString("localhost");
+  port = 4321;
+
   //socket = new QTcpSocket();
-  PLAYER_MSG2(0,"Connecting to %s:%d..", this->hostName.toStdString().data(), this->port);
-  tcpClient = new TcpClient(this->hostName, this->port);
+  PLAYER_MSG2(0,"Connecting to %s:%d..", hostName.toStdString().data(), port);
+  std::cout << "test" << std::endl;
+  tcpClient = new TcpClient(hostName, port);
 
   //socket->connectToHost(this->hostName, this->port);
   //if (true == socket->waitForConnected(5000))
