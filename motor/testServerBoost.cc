@@ -19,15 +19,18 @@ int main () {
 
    try {
       boost::asio::io_service io_service;
-      boost::asio::ip::tcp::acceptor acceptor(
-          io_service,
-          boost::asio::ip::tcp::endpoint(
-            boost::asio::ip::tcp::v4(),
-            port
-            )
-          );
+      boost::asio::ip::tcp::acceptor acceptor
+        (
+         io_service,
+         boost::asio::ip::tcp::endpoint
+         (
+          boost::asio::ip::tcp::v4(),
+          port
+         )
+        );
 
-      for (; ;) {
+      while(true)
+      {
          std::cout<<"Listening to localhost on port " << port <<std::endl;
          boost::asio::ip::tcp::socket socket(io_service);
          acceptor.accept(socket);
@@ -37,7 +40,13 @@ int main () {
          //signed char* p1 = boost::asio::buffer_cast<signed char*>(pointer);
          //std::string message(boost::asio::buffer_cast<const signed char*>(pointer));
          boost::system::error_code ignored_error;
-         boost::asio::write(socket, boost::asio::buffer(message), boost::asio::transfer_all(), ignored_error);
+         boost::asio::write
+           (
+            socket,
+            boost::asio::buffer(message),
+            boost::asio::transfer_all(),
+            ignored_error
+           );
       }
    }
    catch (std::exception& e)

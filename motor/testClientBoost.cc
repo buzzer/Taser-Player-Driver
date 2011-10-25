@@ -28,7 +28,8 @@ int main(int argc, char* argv[])
 
     tcp::resolver resolver(io_service);
     //tcp::resolver::query query(argv[1], "daytime");
-    tcp::resolver::query query("localhost", "4321");
+    //tcp::resolver::query query("localhost", "4321");
+    tcp::resolver::query query(tcp::v4(),"localhost", "4321");
     tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
 
     tcp::socket socket(io_service);
