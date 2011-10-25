@@ -19,7 +19,6 @@ CFLAGSSTD=-pg    \
           -funit-at-a-time \
           -Wall  \
           -Wcast-align\
-          -Waggregate-return \
           -Wcast-qual\
           -Wcomment\
           -Wno-deprecated-declarations\
@@ -28,8 +27,10 @@ CFLAGSSTD=-pg    \
           -Wunused
 DEP_STD=Makefile
 
-testClientBoost: testClientBoost.cc ${DEP_STD}
-	${CC} -o testClientBoost ${CFLAGSSTD} testClientBoost.cc ${LIBDIRS} ${LIBS}
+.SILENT:
+
+testClientBoost: testClientBoost.cc simplepacket.o ${DEP_STD}
+	${CC} -o testClientBoost ${CFLAGSSTD} testClientBoost.cc simplepacket.o ${LIBDIRS} ${LIBS}
 
 testServerBoost: testServerBoost.cc simplepacket.o ${DEP_STD}
 	${CC} -o testServerBoost ${CFLAGSSTD} testServerBoost.cc simplepacket.o ${LIBDIRS} ${LIBS}

@@ -1,4 +1,5 @@
 #include "simplepacket.h"
+#include <iostream>
 
 // This constructor is used to create a new packet TO BE SENT
 Packet::Packet(unsigned int command)
@@ -31,7 +32,7 @@ Packet::Packet(unsigned int command)
 }
 
 //bool Packet::send(QAbstractSocket* socket)
-bool Packet::send()
+bool Packet::send(boost::asio::ip::tcp::socket* socket)
 {
 // 	logger->Packet("Packet::send()");
 
@@ -55,7 +56,20 @@ bool Packet::send()
 // 		logger->Packet("Packet::send(): now calling socket->waitForBytesWritten(-1)");
 // 		socket->waitForBytesWritten(-1);
 // 		logger->Packet("Packet::send(): sent packet with command 0x%08x.", getCommand());
-		return true;
+
+  // TODO error handling
+  boost::system::error_code ignored_error;
+  std::cout << "Sending " << *_packetSize << " bytes" << std::endl;
+  boost::asio::write
+    (
+     *socket,
+     //boost::asio::buffer(message),
+     boost::asio::buffer((const char*)_buffer, *_packetSize),
+     boost::asio::transfer_all(),
+     ignored_error
+    );
+
+  return true;
 	//}
 }
 
@@ -314,7 +328,8 @@ unsigned int Packet::getCRC(void) const
 	if(length < 4)
 	{
 		//logger->Packet("Packet::getCRC(): length is smaller 4, aborting.");
-		//abort();
+    std::cout << "Packet::getCRC(): length is smaller 4, aborting." << std::endl;
+    abort();
 	}
 
 	static unsigned int crctab[256];

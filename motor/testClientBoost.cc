@@ -11,6 +11,7 @@
 #include <iostream>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
+#include "simplepacket.h"
 
 using boost::asio::ip::tcp;
 
@@ -18,27 +19,30 @@ int main(int argc, char* argv[])
 {
   try
   {
-    if (argc != 2)
-    {
-      std::cerr << "Usage: client <host>" << std::endl;
+    //if (argc != 2)
+    //{
+      //std::cerr << "Usage: client <host>" << std::endl;
       //return 1;
-    }
+    //}
+    uint16_t port = 4321;
+    const char* host="134.100.13.175";
+    Packet response;
 
     boost::asio::io_service io_service;
 
-    tcp::resolver resolver(io_service);
-    //tcp::resolver::query query(argv[1], "daytime");
-    //tcp::resolver::query query("localhost", "4321");
-    tcp::resolver::query query(tcp::v4(),"localhost", "4321");
-    tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
-
     tcp::socket socket(io_service);
-    //boost::asio::connect(socket, endpoint_iterator);
-    socket.connect(*endpoint_iterator);
+    tcp::endpoint endpoint
+      (
+       boost::asio::ip::address::from_string(host),
+       port
+      );
 
-    for (;;)
+    socket.connect(endpoint);
+
+    while(true)
     {
-      boost::array<char, 128> buf;
+      //boost::asio::const_buffer buf2;
+      boost::array<uint8_t, 2048> buf;
       boost::system::error_code error;
 
       size_t len = socket.read_some(boost::asio::buffer(buf), error);
@@ -48,7 +52,13 @@ int main(int argc, char* argv[])
       else if (error)
         throw boost::system::system_error(error); // Some other error.
 
-      std::cout.write(buf.data(), len);
+      response.setData((const uint8_t*) buf.data(), len);
+
+      std::cout << "Read " << len << " bytes" << std::endl;
+      std::cout << "Command received " << response.getCommand() << std::endl;
+      int32_t left = response.popS32();
+      int32_t right = response.popS32();
+      std::cout << "Got left " << left << " and right " << right << std::endl;
     }
   }
   catch (std::exception& e)

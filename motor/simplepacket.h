@@ -1,9 +1,14 @@
+#ifndef SIMPLEPACKET_H
+#define SIMPLEPACKET_H
+
 #include <time.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <boost/asio.hpp>
+
 #define MAGICNUMBER 0x4f4c4548
 
 /// @class Packet
@@ -75,8 +80,10 @@ class Packet
 		unsigned int getDataLength(void) const;
 		unsigned int getPacketLength() const;
 
-		bool send();
+		bool send(boost::asio::ip::tcp::socket*);
 
 		bool isValid(void) const;
 		void finalize();
 };
+
+#endif
