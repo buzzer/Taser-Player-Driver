@@ -81,6 +81,7 @@ class Packet
 		unsigned int getPacketLength() const;
 
 		bool send(boost::asio::ip::tcp::socket*);
+    bool receive(boost::asio::ip::tcp::socket*);
 
 		bool isValid(void) const;
 		void finalize();

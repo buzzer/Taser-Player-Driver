@@ -4,9 +4,9 @@
 // This constructor is used to create a new packet TO BE SENT
 Packet::Packet(unsigned int command)
 {
-	//Q_ASSERT(sizeof(int) == 4);
-	//Q_ASSERT(sizeof(unsigned int) == 4);
-	//Q_ASSERT(sizeof(float) == 4);
+	assert(sizeof(int) == 4);
+	assert(sizeof(unsigned int) == 4);
+	assert(sizeof(float) == 4);
 
 	//logger = Logger::instance();
 
@@ -31,46 +31,71 @@ Packet::Packet(unsigned int command)
 	_port = _ip = 0;
 }
 
-//bool Packet::send(QAbstractSocket* socket)
 bool Packet::send(boost::asio::ip::tcp::socket* socket)
 {
-// 	logger->Packet("Packet::send()");
-
-	//if(socket->socketType() == QAbstractSocket::TcpSocket && socket->state() != QAbstractSocket::ConnectedState)
-	//{
+  // TODO check if socket is in connected state
 		//logger->Packet("Packet::send(): The given TCP socket is not in connected state, cannot send!");
 		//return false;
-	//}
 
 	// compute CRC etc.
 	finalize();
 
-// 	logger->Packet("Packet::send(): now calling socket->write()");
-	//if(socket->write((const char*)_buffer, *_packetSize) < 0)
-	//{
-		//logger->Packet("Packet::send(): couldn't send the packet: %s.", qPrintable(socket->errorString()));
-		//return false;
-	//}
-	//else
-	//{
-// 		logger->Packet("Packet::send(): now calling socket->waitForBytesWritten(-1)");
-// 		socket->waitForBytesWritten(-1);
-// 		logger->Packet("Packet::send(): sent packet with command 0x%08x.", getCommand());
-
-  // TODO error handling
-  boost::system::error_code ignored_error;
-  std::cout << "Sending " << *_packetSize << " bytes" << std::endl;
-  boost::asio::write
-    (
-     *socket,
-     //boost::asio::buffer(message),
-     boost::asio::buffer((const char*)_buffer, *_packetSize),
-     boost::asio::transfer_all(),
-     ignored_error
-    );
+  try
+  {
+    boost::system::error_code error;
+    if ( 0 > boost::asio::write
+        (
+         *socket,
+         //boost::asio::buffer(message),
+         boost::asio::buffer((const char*)_buffer, *_packetSize),
+         boost::asio::transfer_all(),
+         error
+        )
+       )
+    {
+      std::cout << "Packet::send(): couldn't send the packet: " << error.message() << std::endl;
+      return false;
+    }
+    else
+    {
+      std::cout << "Packet::send(): sent packet with command 0x" <<  getCommand() << std::endl;
+      std::cout << "Sent " << *_packetSize << " bytes" << std::endl;
+    }
+  }
+  catch (std::exception& e)
+  {
+    std::cout << e.what() << std::endl;
+  }
 
   return true;
-	//}
+}
+bool Packet::receive(boost::asio::ip::tcp::socket* socket)
+{
+  try
+  {
+    while(true)
+    {
+      boost::array<uint8_t, 2048> buf;
+      boost::system::error_code error;
+      size_t len = socket->read_some(boost::asio::buffer(buf), error);
+
+      if (error == boost::asio::error::eof)
+        break; // Connection closed cleanly by peer.
+      else if (error)
+        throw boost::system::system_error(error); // Some other error.
+
+      setData((const uint8_t*) buf.data(), len);
+
+      std::cout << "Read " << len << " bytes" << std::endl;
+    }
+  }
+  catch (std::exception& e)
+  {
+    std::cout << e.what() << std::endl;
+    return false;
+  }
+
+  return true;
 }
 
 void Packet::finalize()
